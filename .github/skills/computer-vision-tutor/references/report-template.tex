@@ -1,0 +1,129 @@
+\documentclass[12pt,a4paper]{article}
+
+% ─── Packages ────────────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T5]{fontenc}
+\usepackage[vietnamese,english]{babel}
+\usepackage{amsmath, amssymb, mathtools}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{parskip}
+
+\geometry{margin=2.5cm}
+
+% ─── Code style ──────────────────────────────────────────────────────────────
+\lstdefinestyle{python}{
+  language=Python,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue!70!black}\bfseries,
+  commentstyle=\color{green!50!black}\itshape,
+  stringstyle=\color{red!60!black},
+  numberstyle=\tiny\color{gray},
+  numbers=left,
+  stepnumber=1,
+  frame=single,
+  breaklines=true,
+  tabsize=4,
+  showstringspaces=false,
+  backgroundcolor=\color{gray!8},
+}
+\lstset{style=python}
+
+% ─── Header / Footer ─────────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{MAT3562E -- Computer Vision Lab XX}
+\lhead{Bui Quang Chien -- 23001837}
+\cfoot{\thepage}
+
+% ─── Hyperref ────────────────────────────────────────────────────────────────
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  urlcolor=blue,
+}
+
+% ─── Title ───────────────────────────────────────────────────────────────────
+\title{%
+  \textbf{LAB XX REPORT}\\[0.4em]
+  \large [Tên chủ đề bài Lab] \\[0.8em]
+  \normalsize MAT3562E -- Computer Vision\\
+  Academic Year 2025--2026
+}
+\author{
+  Bui Quang Chien\\
+  MSSV: 23001837
+}
+\date{[Tháng Năm]}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+% =============================================================================
+\section{Overview and Learning Objectives}
+% =============================================================================
+
+% TODO: Mô tả tổng quan bài lab, liệt kê các phần chính
+
+% =============================================================================
+\section{Environment and Common Utilities}
+% =============================================================================
+
+All code runs in Python~3 with the following packages:
+\texttt{numpy}, \texttt{opencv-python}, \texttt{matplotlib}.
+
+% TODO: Thêm các utility functions dùng chung
+
+% =============================================================================
+\section{Part 1 --- [Tên phần 1]}
+% =============================================================================
+
+\subsection{Approach / Implementation}
+% TODO
+
+\subsection{Results}
+% TODO: Thêm hình ảnh kết quả
+% \begin{figure}[H]
+%   \centering
+%   \includegraphics[width=0.8\textwidth]{data/result.png}
+%   \caption{Mô tả kết quả}
+%   \label{fig:result1}
+% \end{figure}
+
+\subsection{Discussion}
+% TODO
+
+% =============================================================================
+\section{Part 2 --- [Tên phần 2]}
+% =============================================================================
+
+\subsection{Approach / Implementation}
+% TODO
+
+\subsection{Results}
+% TODO
+
+\subsection{Discussion}
+% TODO
+
+% =============================================================================
+\section{Conclusion}
+% =============================================================================
+
+% TODO: Tóm tắt những gì đã học
+
+\end{document}

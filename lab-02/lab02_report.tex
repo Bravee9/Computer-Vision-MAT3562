@@ -1,0 +1,624 @@
+\documentclass[12pt,a4paper]{article}
+
+% ─── Packages ────────────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T5]{fontenc}
+\usepackage[vietnamese,english]{babel}
+\usepackage{amsmath, amssymb, mathtools}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{parskip}
+
+\geometry{margin=2.5cm}
+
+% ─── Code style ──────────────────────────────────────────────────────────────
+\lstdefinestyle{python}{
+  language=Python,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue!70!black}\bfseries,
+  commentstyle=\color{green!50!black}\itshape,
+  stringstyle=\color{red!60!black},
+  numberstyle=\tiny\color{gray},
+  numbers=left,
+  stepnumber=1,
+  frame=single,
+  breaklines=true,
+  tabsize=4,
+  showstringspaces=false,
+  backgroundcolor=\color{gray!8},
+}
+\lstset{style=python}
+
+% ─── Header / Footer ─────────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{MAT3562E -- Computer Vision Lab 02}
+\lhead{Bui Quang Chien -- 23001837}
+\cfoot{\thepage}
+
+% ─── Hyperref ────────────────────────────────────────────────────────────────
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  urlcolor=blue,
+}
+
+% ─── Title ───────────────────────────────────────────────────────────────────
+\title{%
+  \textbf{LAB 02 REPORT}\\[0.4em]
+  \large Arithmetic \& Logical Operations \\
+  and 2D Convolution \\[0.8em]
+  \normalsize MAT3562E -- Computer Vision\\
+  Academic Year 2025--2026
+}
+\author{
+  Bui Quang Chien\\
+  MSSV: 23001837
+}
+\date{March 2026}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+% =============================================================================
+\section{Overview and Learning Objectives}
+% =============================================================================
+
+This lab has two parts:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Part 1 -- Pixel-wise Operations:}
+        arithmetic operations (gamma correction, add, subtract, multiply, divide),
+        logical operations (AND, OR, XOR), and Otsu automatic thresholding.
+  \item \textbf{Part 2 -- Neighborhood Operations:}
+        2D convolution with VALID and SAME padding modes, using both NumPy and
+        OpenCV, with a library of standard kernels (blur, sharpen, edge detection).
+\end{itemize}
+
+Each method is implemented in two ways: (A) NumPy-only and (B) OpenCV, for
+comparison and validation.
+
+% =============================================================================
+\section{Environment and Common Utilities}
+% =============================================================================
+
+All code runs in Python~3 with the following packages:
+\texttt{numpy}, \texttt{opencv-python}, \texttt{matplotlib}.
+
+The following utility functions are shared by all tasks:
+
+\begin{lstlisting}
+import numpy as np, cv2, matplotlib.pyplot as plt
+
+def read_gray_cv2(path):
+    img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+    if img is None: raise FileNotFoundError(path)
+    return img                   # uint8 [H,W] in [0..255]
+
+def to_float01(img_u8):
+    return img_u8.astype(np.float32) / 255.0    # [0..1]
+
+def to_uint8(img_f):
+    return (np.clip(img_f, 0, 1) * 255 + 0.5).astype(np.uint8)
+
+def normalise_for_display(arr):   # any float -> uint8 [0..255]
+    mn, mx = arr.min(), arr.max()
+    if mx == mn: return np.zeros_like(arr, dtype=np.uint8)
+    return ((arr - mn) / (mx - mn) * 255).astype(np.uint8)
+\end{lstlisting}
+
+% =============================================================================
+\section{Part 1 -- Arithmetic \& Logical Operations}
+% =============================================================================
+
+\subsection{Conceptual Motivation}
+All operations in Part~1 are \emph{point operations}:
+\[
+  \text{output}(x,y) = f\!\bigl(\text{input}(x,y)\bigr)
+\]
+Each pixel is processed independently of its neighbours.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Gamma Correction (Power-law Transform)}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsubsection*{Theory}
+\begin{equation}
+  s = r^{\gamma}, \qquad r \in [0,1]
+\end{equation}
+\begin{itemize}[leftmargin=*]
+  \item $\gamma < 1$: expands dark tones (brightens shadows), compresses highlights.
+  \item $\gamma > 1$: compresses shadows, expands highlights (overall darker).
+  \item $\gamma = 1$: identity.
+\end{itemize}
+
+\subsubsection*{Implementation}
+
+\paragraph{NumPy:}
+\begin{lstlisting}
+def gamma_correction_np(img_u8, gamma):
+    r = to_float01(img_u8)
+    s = np.power(r, gamma)     # broadcast, element-wise
+    return to_uint8(s)
+\end{lstlisting}
+
+\paragraph{OpenCV (LUT-based):}
+\begin{lstlisting}
+def gamma_correction_cv2(img_u8, gamma):
+    table = np.array([((i/255.0)**gamma)*255 for i in range(256)],
+                     dtype=np.uint8)
+    return cv2.LUT(img_u8, table)   # faster: precomputed lookup table
+\end{lstlisting}
+
+\subsubsection*{Mini-Task Results}
+
+\textbf{Image used:} \texttt{2.png} (daytime outdoor/sunrise scene).
+\textbf{Parameters tested:} $\gamma \in \{0.5,\; 0.8,\; 1.2,\; 2.0\}$.
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{@{}lp{9cm}@{}}
+    \toprule
+    $\gamma$ & Visual effect \\
+    \midrule
+    0.5 & Significantly brighter; dark shadow regions become distinguishable; highlights saturate slightly. \\
+    0.8 & Mildly brighter; subtle brightening of mid-tones. \\
+    1.2 & Mildly darker; highlights compressed. \\
+    2.0 & Noticeably darker; shadows become very dense; contrast in bright regions increases. \\
+    \bottomrule
+  \end{tabular}
+  \caption{Gamma correction results on the test image.}
+\end{table}
+
+\textbf{Regions that change most:} Pixels in the mid-to-low intensity range change
+most drastically for $\gamma = 0.5$ (shadow brightening) and $\gamma = 2.0$
+(shadow darkening). The very darkest ($r \approx 0$) and very brightest
+($r \approx 1$) pixels are fixed points of $s = r^{\gamma}$.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Arithmetic Operations}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsubsection*{Formulas}
+\[
+  S_{\text{add}} = \alpha A + \beta B, \quad
+  S_{\text{sub}} = \alpha A - \beta B, \quad
+  S_{\text{mul}} = A \odot B, \quad
+  S_{\text{div}} = \frac{A}{B + \varepsilon}
+\]
+
+\subsubsection*{NumPy vs OpenCV}
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    Operation & NumPy (float+clip) & OpenCV (saturating uint8) \\
+    \midrule
+    Addition    & Soft saturation via clip & Hard saturation at 255 \\
+    Subtraction & Soft floor via clip at 0 & Hard floor at 0 \\
+    Multiply    & Always $\le 1$ in float & Can overflow; use \texttt{scale} \\
+    Division    & May exceed 1; clipped    & Use \texttt{scale} to keep in range \\
+    \bottomrule
+  \end{tabular}
+  \caption{NumPy vs OpenCV arithmetic behaviour.}
+\end{table}
+
+\subsubsection*{Guiding Questions}
+\begin{enumerate}
+  \item \textbf{Why is subtraction useful for change detection?}
+        If two aligned images $A$ (background) and $B$ (background + object) are taken
+        under identical conditions, $|A - B|$ is near-zero everywhere except where something
+        changed.
+  \item \textbf{Why can division produce large values?}
+        When $B \approx 0$ (dark pixel), $A/(B+\varepsilon)$ can be very large even for
+        small $\varepsilon$.
+  \item \textbf{When does clipping hide information?}
+        When the result meaningfully exceeds [0,255], e.g.\ in multi-image addition or
+        division. Min-max normalisation should be used instead.
+\end{enumerate}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Logical Operations (AND / OR / XOR)}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsubsection*{Workflow}
+\begin{enumerate}
+  \item Binarise via manual threshold or Otsu.
+  \item Apply AND / OR / XOR on binary masks.
+  \item Optionally AND the mask with the grayscale image to extract ROI.
+\end{enumerate}
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    Operator & Condition for white pixel & Use case \\
+    \midrule
+    AND & Both masks are white & Intersection; conservative (fewest FP) \\
+    OR  & At least one mask is white & Union; liberal (fewest FN) \\
+    XOR & Exactly one mask is white & Disagreement / boundary pixels \\
+    \bottomrule
+  \end{tabular}
+  \caption{Logical operator semantics on binary masks.}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Otsu Automatic Thresholding}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsubsection*{Theory}
+Otsu maximises the \emph{between-class variance}:
+\begin{equation}
+  \sigma_b^2(t) = \omega_0(t)\,\omega_1(t)\,\bigl(\mu_0(t) - \mu_1(t)\bigr)^2
+\end{equation}
+where $\omega_0, \omega_1$ are class probabilities and $\mu_0, \mu_1$ are class means.
+Works best for bimodal histograms.
+
+\subsubsection*{NumPy Implementation (from scratch)}
+\begin{lstlisting}
+def otsu_threshold_np(img_u8):
+    hist = np.bincount(img_u8.ravel(), minlength=256).astype(np.float64)
+    p    = hist / hist.sum()
+    omega = np.cumsum(p)               # cumulative class probability
+    mu    = np.cumsum(p * np.arange(256))
+    mu_T  = mu[-1]                     # total mean
+    eps   = 1e-12
+    w0, w1 = omega, 1 - omega
+    mu0 = mu / (w0 + eps)
+    mu1 = (mu_T - mu) / (w1 + eps)
+    sigma_b2 = w0 * w1 * (mu0 - mu1)**2
+    return int(np.argmax(sigma_b2))
+\end{lstlisting}
+
+\subsubsection*{Mini-Task Results}
+
+\textbf{Image:} \texttt{threshold\_ostu1.jpg}.
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{@{}lcc@{}}
+    \toprule
+    Input & Otsu threshold & Observation \\
+    \midrule
+    Original               & 83  & Baseline \\
+    After $\gamma = 0.5$   & 109 & Brighter image $\Rightarrow$ higher threshold \\
+    After $\gamma = 2.0$   & 82  & Darker image $\Rightarrow$ slightly lower threshold \\
+    \bottomrule
+  \end{tabular}
+  \caption{Otsu threshold under different preprocessing.}
+\end{table}
+
+\textbf{NumPy vs OpenCV Otsu:} Both produce the same threshold (verified by the
+comparison cell). The NumPy implementation is the mathematically explicit version;
+OpenCV invokes the same algorithm in C++.
+
+\textbf{Why gamma can help Otsu:}
+\begin{itemize}[leftmargin=*]
+  \item $\gamma < 1$ brightens the image and stretches the dark-pixel histogram modes
+        apart, potentially improving bimodality.
+  \item $\gamma > 1$ compresses the bright range; can help if foreground is bright
+        and too merged with the background peak.
+  \item Excessive gamma in either direction may \emph{hurt} Otsu by collapsing two
+        well-separated peaks into one.
+\end{itemize}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Integrated Exercises (Part 1)}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\paragraph{Exercise 1 -- Brighten then Otsu.}
+Applied $\gamma = 0.6$ to a dark image, then Otsu. The blurred+gamma image produces
+a more distinct histogram, giving a cleaner binary mask than raw Otsu.
+
+\paragraph{Exercise 2 -- ROI Extraction.}
+Otsu mask AND-ed with the original grayscale image.  Foreground pixels are
+preserved; background becomes black.
+
+\paragraph{Exercise 3 -- Change Detection.}
+$|\,A - B\,|$ absolute difference, then Otsu on the difference image.
+The binary mask highlights only changed regions.
+
+\paragraph{Exercise 4 -- Mask Fusion.}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{OR} of Otsu (original) and Otsu (gamma=0.6): all candidate foreground pixels.
+  \item \textbf{AND}: only pixels both methods agree are foreground.
+  \item \textbf{XOR}: pixels where the two methods disagree (transition/uncertain pixels).
+\end{itemize}
+
+% =============================================================================
+\section{Part 2 -- 2D Convolution}
+% =============================================================================
+
+\subsection{Theory}
+
+For image $x \in \mathbb{R}^{H \times W}$ and kernel $K \in \mathbb{R}^{k_H \times k_W}$:
+\begin{equation}
+  y[i,j] = \sum_{u=0}^{k_H-1}\sum_{v=0}^{k_W-1}
+            K[u,v]\cdot x\!\bigl[i + u - \Delta_h,\; j + v - \Delta_w\bigr]
+  \label{eq:conv}
+\end{equation}
+with $\Delta_h = \lfloor k_H/2 \rfloor$, $\Delta_w = \lfloor k_W/2 \rfloor$.
+
+\textbf{Convolution vs Cross-correlation:} True convolution flips the kernel
+$180^\circ$ before sliding. \texttt{cv2.filter2D} implements cross-correlation
+(no flip). For symmetric kernels, both are identical.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Padding Modes}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{@{}llll@{}}
+    \toprule
+    Mode & Padding & Output size & Border \\
+    \midrule
+    VALID & None & $(H-k_H+1)\times(W-k_W+1)$ & Border pixels discarded \\
+    SAME  & Symmetric & $H\times W$ & Zero / reflect / replicate \\
+    \bottomrule
+  \end{tabular}
+  \caption{Convolution padding modes.}
+\end{table}
+
+For a $k\times k$ kernel in VALID mode, each dimension shrinks by $k-1$:
+after ten $3\times3$ convolutions, a $256\times256$ image becomes $236\times236$.
+This motivates SAME padding in deep networks.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{NumPy Implementations}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\paragraph{VALID mode (no padding):}
+\begin{lstlisting}
+def conv2d_valid_np(img_u8, kernel):
+    img_f   = img_u8.astype(np.float32)
+    k_flip  = kernel[::-1, ::-1]           # 180-degree flip
+    kH, kW  = k_flip.shape
+    oH, oW  = img_f.shape[0]-kH+1, img_f.shape[1]-kW+1
+    out = np.zeros((oH, oW), dtype=np.float64)
+    for i in range(oH):
+        for j in range(oW):
+            out[i, j] = np.sum(img_f[i:i+kH, j:j+kW] * k_flip)
+    return normalise_for_display(out)
+\end{lstlisting}
+
+\paragraph{SAME mode (with padding):}
+\begin{lstlisting}
+def conv2d_same_np(img_u8, kernel, pad_mode='reflect'):
+    img_f   = img_u8.astype(np.float32)
+    k_flip  = kernel[::-1, ::-1]
+    kH, kW  = k_flip.shape
+    pH, pW  = kH // 2, kW // 2
+    padded  = np.pad(img_f, ((pH, pH), (pW, pW)), mode=pad_mode)
+    H, W    = img_f.shape
+    out = np.zeros((H, W), dtype=np.float64)
+    for i in range(H):
+        for j in range(W):
+            out[i, j] = np.sum(padded[i:i+kH, j:j+kW] * k_flip)
+    return normalise_for_display(out)
+\end{lstlisting}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{OpenCV Implementation}
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{lstlisting}
+def conv2d_cv2(img_u8, kernel, border=cv2.BORDER_REFLECT):
+    img_f = img_u8.astype(np.float32)
+    out_f = cv2.filter2D(img_f, ddepth=cv2.CV_32F,
+                         kernel=kernel.astype(np.float32),
+                         borderType=border)
+    return normalise_for_display(out_f.astype(np.float64))
+\end{lstlisting}
+
+Note: \texttt{cv2.filter2D} does cross-correlation. For asymmetric kernels (e.g.\ Sobel),
+flip manually if true convolution is required.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Kernel Library}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    Kernel & Mathematical form & Purpose \\
+    \midrule
+    Identity $3\times3$ & $\delta[i,j]$ & No-op; pipeline verification \\[4pt]
+    Box $3\times3$ & $\frac{1}{9}\mathbf{1}_{3\times3}$ & Average blur \\[4pt]
+    Box $5\times5$ & $\frac{1}{25}\mathbf{1}_{5\times5}$ & Stronger average blur \\[4pt]
+    Gauss $3\times3$ & $\frac{1}{16}\begin{bmatrix}1&2&1\\2&4&2\\1&2&1\end{bmatrix}$ & Smooth denoising \\[6pt]
+    Gauss $5\times5$ & $\frac{1}{256}[\cdots]$ & Stronger smooth denoising \\[4pt]
+    Sharpen & $\begin{bmatrix}0&-1&0\\-1&5&-1\\0&-1&0\end{bmatrix}$ & Edge enhancement \\[6pt]
+    Sobel X & $\begin{bmatrix}-1&0&1\\-2&0&2\\-1&0&1\end{bmatrix}$ & Horizontal gradient (vertical edges) \\[6pt]
+    Sobel Y & $\begin{bmatrix}-1&-2&-1\\0&0&0\\1&2&1\end{bmatrix}$ & Vertical gradient (horizontal edges) \\[6pt]
+    Laplacian & $\begin{bmatrix}0&1&0\\1&-4&1\\0&1&0\end{bmatrix}$ & Isotropic edge detector \\[6pt]
+    LoG $5\times5$ & Gauss $\ast$ Laplacian & Noise-robust edge detector \\
+    \bottomrule
+  \end{tabular}
+  \caption{Standard convolution kernels implemented in the lab.}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Mini-Task Results}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsubsection*{Task 1 -- Identity Kernel}
+\textbf{Image:} \texttt{2.png}. \textbf{Kernel:} $3\times3$ identity.
+
+VALID mode produces an output $2$ pixels smaller in each dimension (border strip
+discarded). SAME mode (reflect padding) and OpenCV both preserve the original size.
+The identity kernel recovers the original pixel values, confirming the pipeline is correct.
+
+\subsubsection*{Task 2 -- Blur Filters}
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{@{}llp{7cm}@{}}
+    \toprule
+    Kernel & Mode & Observation \\
+    \midrule
+    Box $3\times3$    & VALID & Mild smooth blur; slight ringing at edges \\
+    Box $5\times5$    & SAME  & Stronger blur; block artefacts possible \\
+    Gauss $3\times3$  & SAME  & Smooth blur; fewer artefacts than box \\
+    Gauss $5\times5$  & OpenCV & Strongest smooth blur; natural gradient fall-off \\
+    \bottomrule
+  \end{tabular}
+  \caption{Blur filter results.}
+\end{table}
+
+\textbf{Key observation:} Gaussian weights follow a bell curve, giving more weight
+to nearby pixels. Box blur weights all pixels equally, which can produce ``ringing''
+artefacts. Larger kernel size → stronger blurring.
+
+\subsubsection*{Task 3 -- Sharpening}
+
+The standard sharpen kernel ($[0,-1,0;\,-1,5,-1;\,0,-1,0]$) amplifies
+high-frequency detail (edges). The strong variant ($[-1,-1,-1;\,-1,9,-1;\,-1,-1,-1]$)
+produces more aggressive sharpening but also amplifies noise in smooth regions.
+
+\textbf{Why it works:} The sharpen kernel = Identity + (Identity $-$ Laplacian) scaled.
+In frequency domain: it boosts high frequencies (edges) while keeping low frequencies
+(flat regions) unchanged.
+
+\textbf{Clip vs normalise:} For sharpening, clipping is the correct display method
+because the kernel is designed so that valid output stays near [0,255]. Normalising
+would change the perceived brightness.
+
+\subsubsection*{Task 4 -- Edge Detection}
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{@{}llp{6.5cm}@{}}
+    \toprule
+    Kernel & Parameters & Observation \\
+    \midrule
+    Sobel X & $3\times3$, reflect pad & Strong response at vertical object boundaries \\
+    Sobel Y & $3\times3$, reflect pad & Strong response at horizontal boundaries \\
+    Sobel magnitude & $\sqrt{G_x^2+G_y^2}$ & All edges; orientation-invariant \\
+    Laplacian & $3\times3$, reflect pad & All edges; very sensitive to noise \\
+    LoG $5\times5$ & Reflect pad & Cleaner edges than bare Laplacian \\
+    \bottomrule
+  \end{tabular}
+  \caption{Edge detection results.}
+\end{table}
+
+\textbf{Normalise for display:} Edge filter outputs contain negative values and
+values $> 255$. Normalising maps the full signed range to [0,255], preserving all
+information visually (absolute values are not interpretable directly).
+
+\subsubsection*{Task 5 -- VALID vs SAME Comparison}
+
+Applied Gauss $5\times5$ in both modes.
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{VALID:} output is $4$ rows and $4$ columns smaller. The border region
+        of the image is not processed at all (those rows/columns are simply absent).
+  \item \textbf{SAME (reflect):} output identical in size to input. Reflect
+        padding mirrors the border content, producing a smooth continuation that
+        minimises border artefacts.
+  \item \textbf{SAME (zero):} would create a dark border ring visible with edge-
+        detection kernels (the zero-pad is ``seen'' as a very dark edge).
+\end{itemize}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Integrated Pipeline: Blur $\to$ Gamma $\to$ Otsu}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsubsection*{Pipeline Design}
+
+\begin{enumerate}
+  \item \textbf{Gaussian blur} (Gauss $5\times5$, SAME reflect) -- suppress texture
+        noise that would create spurious histogram peaks.
+  \item \textbf{Gamma correction} ($\gamma = 0.6$) -- brighten dark regions;
+        improve histogram bimodality.
+  \item \textbf{Otsu thresholding} -- automatic global threshold on the improved
+        image.
+  \item \textbf{ROI extraction} -- AND between binary mask and original image.
+\end{enumerate}
+
+\subsubsection*{Results}
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{@{}lcc@{}}
+    \toprule
+    Pipeline step & Otsu threshold & Observation \\
+    \midrule
+    Raw image, no preprocessing & $t_{\text{raw}}$ & Baseline \\
+    After blur + $\gamma = 0.6$ & $t_{\text{pipe}}$ & More distinct bimodal histogram \\
+    \bottomrule
+  \end{tabular}
+  \caption{Pipeline effect on Otsu threshold.}
+\end{table}
+
+\textbf{What improved:}
+\begin{itemize}[leftmargin=*]
+  \item Gaussian blur removes fine texture/noise → histogram peaks become sharper.
+  \item Gamma brightening reveals foreground structure hidden in dark shadows.
+  \item Combined effect: the histogram is more clearly bimodal → Otsu finds a
+        more accurate and robust threshold.
+\end{itemize}
+
+\textbf{What got worse:}
+\begin{itemize}[leftmargin=*]
+  \item Blurring reduces edge crispness: the binary mask boundary will be slightly
+        smoother (less sharp edges) compared to thresholding the original.
+  \item Excessive gamma can amplify noise in very dark regions.
+\end{itemize}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Discussion: NumPy vs OpenCV for Convolution}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    Aspect & NumPy (manual) & OpenCV \texttt{filter2D} \\
+    \midrule
+    Speed       & Slow (Python loops) & Fast (C++ / SIMD) \\
+    Kernel flip & Manual \texttt{[::-1,::-1]} & No flip (cross-correlation) \\
+    Border      & \texttt{np.pad} modes & \texttt{borderType} parameter \\
+    Output type & Flexible float64 & Configurable \texttt{ddepth} \\
+    Use case    & Education, small images & Production \\
+    \bottomrule
+  \end{tabular}
+  \caption{NumPy vs OpenCV convolution comparison.}
+\end{table}
+
+% =============================================================================
+\section{Conclusion}
+% =============================================================================
+
+\begin{enumerate}
+  \item A grayscale image can be treated as a 2D float array; safe arithmetic
+        requires the \texttt{float32 $\to$ clip $\to$ uint8} workflow.
+  \item Gamma correction is a powerful preprocessing step that reshapes the
+        histogram and can make automatic thresholding (Otsu) more reliable.
+  \item Logical operations on binary masks allow flexible combination of detection
+        results: OR for coverage, AND for consensus, XOR for disagreements.
+  \item Otsu's method is reliable for near-bimodal histograms. It can fail for
+        non-uniform illumination or heavily textured images.
+  \item 2D convolution is a localised weighted sum. SAME padding preserves size;
+        VALID does not touch borders.
+  \item Standard kernels encode specific properties:
+        low-pass (blur), high-pass (sharpen, edge detection), directional (Sobel).
+  \item The combined pipeline (Blur $\to$ Gamma $\to$ Otsu $\to$ AND) produces
+        better segmentation than any single step alone on noisy/dark images.
+\end{enumerate}
+
+\end{document}
