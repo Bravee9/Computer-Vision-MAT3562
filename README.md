@@ -1,3 +1,5 @@
+**English** | [Tiếng Việt](README.vi.md)
+
 <div align="center">
 
 # Computer Vision — MAT3562E
@@ -40,17 +42,23 @@ Each lab includes:
 
 ## Highlights
 
-**From-Scratch Implementations**
-- 2D convolution with zero-padding (NumPy) — verified against `cv2.filter2D`
-- Morphological erosion/dilation from scratch
-- Forward & inverse geometric mapping
+**Dual Implementation Approach**  
+All core algorithms were implemented **both from scratch (NumPy) and with OpenCV**, and results were cross-verified to ensure correctness — demonstrating deep understanding beyond API usage.
+
+- 2D convolution with zero-padding (NumPy) — output verified pixel-by-pixel against `cv2.filter2D`
+- Histogram equalization, gamma correction, and log transforms — manual vs `cv2` cross-check
+- Morphological erosion/dilation from scratch — verified against `cv2.erode` / `cv2.dilate`
+- Forward & inverse geometric mapping — manual affine transform vs `cv2.warpAffine`
+
+**LaTeX Technical Reports**  
+Each lab is accompanied by a structured LaTeX report covering: mathematical derivations, algorithm descriptions, experimental setup, and quantitative/qualitative analysis of results.
 
 **End-to-End Mini-Project (Lab 03)**
 
-Two parallel image enhancement pipelines handling different noise types:
+Two parallel image enhancement pipelines handling different noise types, including a full **Canny edge detection** stage:
 
 ```
-Noisy Image → Denoise → Sharpen → Edge Detect
+Noisy Image → Denoise → Sharpen → Edge Detect (Canny)
 ```
 
 | Stage | Gaussian Noise Pipeline | Salt & Pepper Pipeline |
@@ -58,6 +66,19 @@ Noisy Image → Denoise → Sharpen → Edge Detect
 | Denoise | GaussianBlur (5×5) | MedianBlur (5×5) |
 | Sharpen | Unsharp masking | Unsharp masking |
 | Edge Detect | Canny (30/80) | Canny (30/80) |
+
+---
+
+## Skills Demonstrated
+
+| Area | Details |
+|------|---------|
+| Image Processing | Histogram equalization, point transforms, spatial filtering |
+| Frequency Domain | DFT/FFT, ideal & Gaussian LP/HP filters |
+| Computer Vision | Canny edge detection, Otsu thresholding, morphological ops |
+| Implementation | NumPy from-scratch verified against OpenCV — ensures deep algorithmic understanding |
+| Documentation | LaTeX technical reports with theory derivations and experimental analysis |
+| Tools | Python 3, OpenCV, NumPy, scikit-image, Matplotlib, Jupyter, LaTeX |
 
 ---
 
@@ -117,3 +138,10 @@ Computer Science, Hanoi University of Science — VNU
 
 [![GitHub](https://img.shields.io/badge/GitHub-Bravee9-181717?style=flat-square&logo=github)](https://github.com/Bravee9)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Brave9-0A66C2?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/brave9/)
+
+---
+
+## License
+
+Academic project — for educational reference only.  
+© 2025–2026 Bùi Quang Chiến — Hanoi University of Science, VNU
