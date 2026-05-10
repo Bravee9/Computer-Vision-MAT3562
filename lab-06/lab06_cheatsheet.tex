@@ -1,0 +1,326 @@
+\documentclass[9pt,landscape,a4paper]{extarticle}
+\usepackage[utf8]{inputenc}
+\usepackage[vietnamese]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{fontspec}
+\setmainfont{Libertinus Serif} % As per user's font
+
+% Layout and multicolumn
+\usepackage[margin=0.8cm, top=1.5cm, bottom=1.5cm]{geometry}
+\usepackage{multicol}
+\setlength{\columnsep}{0.8cm}
+\setlength{\columnseprule}{0.1pt}
+
+% Math and symbols
+\usepackage{amsmath,amssymb}
+\usepackage{wasysym}
+\usepackage{xcolor}
+
+% Custom Colors (Stanford Cheatsheet style)
+\definecolor{stanfordblue}{RGB}{1, 104, 149}
+\definecolor{stanfordred}{RGB}{140, 21, 21}
+\definecolor{stanfordgreen}{RGB}{0, 100, 0}
+\definecolor{cyanbox}{RGB}{220, 245, 255}
+
+% Section styling (mimicking the sheet)
+\usepackage{titlesec}
+\titleformat{\section}
+  {\normalfont\normalsize\bfseries}{\thesection}{1em}{}
+\titlespacing*{\section}{0pt}{1.5ex plus 1ex minus .2ex}{0.5ex plus .2ex}
+
+\titleformat{\subsection}
+  {\normalfont\small\bfseries}{\thesubsection}{1em}{}
+\titlespacing*{\subsection}{0pt}{1ex plus 1ex minus .2ex}{0.5ex plus .2ex}
+
+% Fancy header
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% Header content
+\lhead{\textsc{MAT3562E} -- \textsc{COMPUTER VISION}}
+\rhead{\colorbox{cyan!20}{\makebox[4cm][c]{\textbf{Bùi Quang Chiến -- 23001837}}}}
+
+% Footer content
+\lfoot{\textsc{HUS -- VNU}}
+\cfoot{\thepage}
+\rfoot{\textsc{SPRING 2026}}
+
+% Dense lists
+\usepackage{enumitem}
+\setlist{nosep, leftmargin=1.2em}
+\setlist[itemize,1]{label={\textcolor{stanfordgreen}{\footnotesize$\square$}}}
+\setlist[itemize,2]{label=--}
+
+\begin{document}
+\begin{center}
+    {\Large \bfseries VIP Cheatsheet: LAB06} \\
+    \vspace{0.3cm}
+    {\large \textsc{Bùi Quang Chiến}} \\
+    \vspace{0.2cm}
+    {\small April 2026}
+\end{center}
+\vspace{0.3cm}
+
+\begin{multicols*}{3}
+
+\begin{center}
+    {\Large \bfseries VIP Cheatsheet: LAB06} \\
+    \vspace{0.3cm}
+    {\large \textsc{Bùi Quang Chiến}} \\
+    \vspace{0.2cm}
+    {\small April 2026}
+\end{center}
+\vspace{0.3cm}
+
+\begin{multicols*}{3}
+
+\begin{center}
+  {\large\bfseries\color{hdr} LAB 06 CHEATSHEET --- Region-Based Segmentation} \\
+  {\small Bui Quang Chien \textbullet{} 23001837 \textbullet{} MAT3562E Computer Vision 2025--2026}
+\end{center}
+\hrule\vspace{2pt}
+
+\begin{multicols}{3}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{K-means --- Theory}
+
+\textbf{Objective:} Partition $N$ pixels into $k$ clusters minimizing:
+\[
+  J = \sum_{j=1}^{k}\sum_{\mathbf{x}\in C_j}\lVert\mathbf{x}-\boldsymbol{\mu}_j\rVert^2
+\]
+
+\textbf{Algorithm (Lloyd's):}
+\begin{enumerate}
+  \item Init $k$ centroids (random or K-means++)
+  \item \textbf{Assign:} $\text{label}(\mathbf{x})=\arg\min_j\lVert\mathbf{x}-\boldsymbol{\mu}_j\rVert^2$
+  \item \textbf{Update:} $\boldsymbol{\mu}_j = \frac{1}{|C_j|}\sum_{\mathbf{x}\in C_j}\mathbf{x}$
+  \item Repeat 2--3 until $\lVert\Delta\boldsymbol{\mu}\rVert < \varepsilon$
+\end{enumerate}
+
+\begin{notebox}
+\textbf{K-means does NOT guarantee connected regions!}
+Pixels with similar intensity far apart may share a label.
+\end{notebox}
+
+\begin{infobox}
+\textbf{Feature vector variants:}\\
+\textbf{Intensity only:} $\mathbf{x}=(I)$ \quad 1-D\\
+\textbf{Intensity+XY:} $\mathbf{x}=(I,\; w\cdot y/H,\; w\cdot x/W)$ \quad 3-D\\
+$w$ = \texttt{spatial\_weight} controls locality.
+\end{infobox}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{K-means --- Intensity Only}
+
+\begin{lstlisting}[language=Python]
+def kmeans_gray_intensity(gray, k=3,
+      max_iter=30, tol=1e-4, seed=0):
+  X = gray.astype(np.float32).reshape(-1, 1)
+  rng = np.random.default_rng(seed)
+  idx = rng.choice(X.shape[0], size=k,
+                   replace=False)
+  centers = X[idx].copy()
+
+  for _ in range(max_iter):
+    dists = np.sum(
+      (X[:,None,:] - centers[None,:,:]) **2,
+      axis=2)
+    labels = np.argmin(dists, axis=1)
+
+    new_c = centers.copy()
+    for c in range(k):
+      pts = X[labels == c]
+      if len(pts) > 0:
+        new_c[c] = pts.mean(axis=0)
+
+    if np.linalg.norm(new_c - centers) < tol:
+      break
+    centers = new_c
+
+  return labels.reshape(gray.shape),\
+         centers.reshape(-1)
+\end{lstlisting}
+
+\begin{tipbox}
+\textbf{Key idea:} Flatten image to $N\times 1$, cluster by intensity, reshape labels back.
+\end{tipbox}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{K-means --- Intensity + XY}
+
+\begin{lstlisting}[language=Python]
+def kmeans_gray_intensity_xy(gray, k=3,
+      spatial_weight=0.25, max_iter=30,
+      tol=1e-4, seed=0):
+  h, w = gray.shape
+  yy, xx = np.mgrid[0:h, 0:w]
+  I = gray.astype(np.float32) / 255.0
+  X = np.stack([
+    I,
+    spatial_weight * yy.astype(np.float32)
+                     / max(h-1, 1),
+    spatial_weight * xx.astype(np.float32)
+                     / max(w-1, 1)
+  ], axis=-1).reshape(-1, 3)
+  # ... same loop as intensity-only ...
+\end{lstlisting}
+
+\begin{center}
+\begin{tabular}{@{}cl@{}}
+\toprule
+\texttt{spatial\_weight} & \textbf{Effect} \\
+\midrule
+0.0 & Pure intensity (= basic K-means)\\
+0.25 & Slight spatial coherence\\
+0.5--0.7 & Strong locality, like superpixels\\
+$>1.0$ & Ignores intensity, grid-like\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{K-means --- OpenCV}
+
+\begin{lstlisting}[language=Python]
+def kmeans_opencv_intensity(gray, k=2,
+                            attempts=10):
+  X = gray.reshape(-1,1).astype(np.float32)
+  criteria = (cv2.TERM_CRITERIA_EPS +
+              cv2.TERM_CRITERIA_MAX_ITER,
+              50, 0.2)
+  comp, labels, centers = cv2.kmeans(
+      X, k, None, criteria, attempts,
+      cv2.KMEANS_PP_CENTERS)
+  return labels.reshape(gray.shape),\
+         centers.reshape(-1), comp
+\end{lstlisting}
+
+\begin{tipbox}
+\textbf{Advantages:} C++ speed, K-means++ init, multiple \texttt{attempts} $\to$ more stable.
+\texttt{compactness} = total within-cluster distance (lower is better).
+\end{tipbox}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Region Growing --- Theory}
+
+\textbf{Idea:} BFS/DFS from seed pixel; add neighbor if it meets homogeneity criterion.
+
+\textbf{Two reference strategies:}
+
+\begin{infobox}
+\textbf{R1 --- Seed Reference:}\\
+$|I(x,y) - I_{\text{seed}}| \leq T$\\
+Stable but misses gradual gradients.
+\end{infobox}
+
+\begin{infobox}
+\textbf{R2 --- Region Mean:}\\
+$|I(x,y) - \bar{I}_{\text{region}}| \leq T$\\
+Adapts to gradient but may ``leak''.
+\end{infobox}
+
+\textbf{Connectivity:}
+\begin{itemize}
+  \item \textbf{4-conn:} up/down/left/right
+  \item \textbf{8-conn:} + 4 diagonals (more natural but leaks easier)
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Region Growing --- Seed Ref}
+
+\begin{lstlisting}[language=Python]
+from collections import deque
+
+def region_growing_seed_ref(gray, seed,
+      threshold=10, connectivity=4):
+  h, w = gray.shape
+  visited = np.zeros((h,w), dtype=bool)
+  region  = np.zeros((h,w), dtype=np.uint8)
+  ref_val = float(gray[seed])
+
+  nbrs = [(-1,0),(1,0),(0,-1),(0,1)]
+  if connectivity == 8:
+    nbrs += [(-1,-1),(-1,1),(1,-1),(1,1)]
+
+  q = deque([seed]); visited[seed] = True
+  while q:
+    x, y = q.popleft()
+    if abs(float(gray[x,y]) - ref_val)\
+       <= threshold:
+      region[x,y] = 255
+      for dx,dy in nbrs:
+        nx, ny = x+dx, y+dy
+        if 0<=nx<h and 0<=ny<w\
+           and not visited[nx,ny]:
+          visited[nx,ny] = True
+          q.append((nx,ny))
+  return region
+\end{lstlisting}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Region Growing --- Region Mean}
+
+\begin{lstlisting}[language=Python]
+def region_growing_region_mean(gray, seed,
+      threshold=10, connectivity=4):
+  h, w = gray.shape
+  visited = np.zeros((h,w), dtype=bool)
+  region  = np.zeros((h,w), dtype=np.uint8)
+  region_sum = float(gray[seed])
+  region_count = 1
+  # ... same BFS but:
+  # ref_val = region_sum / region_count
+  # when adding pixel:
+  #   region_sum += float(gray[nx,ny])
+  #   region_count += 1
+\end{lstlisting}
+
+\begin{notebox}
+\textbf{Leak risk:} Region mean drifts as the region grows. Use with smaller $T$ near boundaries.
+\end{notebox}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Key Parameters}
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Param} & \textbf{Method} & \textbf{Effect} \\
+\midrule
+$k$ & K-means & \# of segments \\
+& & $\uparrow k$: more detail\\
+\texttt{w} & K-means & spatial weight\\
+& +XY & $\uparrow w$: more local\\
+$T$ & Region & tolerance\\
+& Growing & $\uparrow T$: larger region\\
+conn & Region & 4 vs 8\\
+& Growing & 8: smoother, leakier\\
+seed & Region & start point\\
+& Growing & determines which region\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Common Mistakes}
+
+\begin{notebox}
+\begin{enumerate}
+  \item \textbf{No preprocessing:} Noise makes K-means and Region Growing unreliable. Always consider Gaussian blur.
+  \item \textbf{Wrong dtype:} OpenCV \texttt{kmeans} requires \texttt{float32}.
+  \item \textbf{Overflow in distance:} Use \texttt{float32} before squaring.
+  \item \textbf{Forgetting visited:} Region Growing without visited array $\to$ infinite loop.
+  \item \textbf{Seed outside object:} Region Growing result depends entirely on seed position.
+\end{enumerate}
+\end{notebox}
+
+\end{multicols}
+
+\end{multicols*}
+
+\end{multicols*}
+\end{document}

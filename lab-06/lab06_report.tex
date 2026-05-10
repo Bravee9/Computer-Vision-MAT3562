@@ -1,0 +1,423 @@
+\documentclass[12pt,a4paper]{article}
+
+% ============================================
+% PACKAGES
+% ============================================
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\usepackage[vietnamese]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
+
+% ============================================
+% FONT SETTINGS
+% ============================================
+\setmainfont{Libertinus Serif}
+\setsansfont{Libertinus Sans}
+\setmonofont{JetBrains Mono}[Scale=0.9]
+\setmathfont{Libertinus Math}
+
+% ============================================
+% PAGE LAYOUT
+% ============================================
+\geometry{
+    left=2.5cm,
+    right=2.5cm,
+    top=2.5cm,
+    bottom=2.5cm
+}
+
+% ============================================
+% COLORS
+% ============================================
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+% ============================================
+% CODE LISTING STYLE
+% ============================================
+\lstdefinestyle{pythonstyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{blue},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=4,
+    language=Python
+}
+\lstset{style=pythonstyle}
+
+% ============================================
+% HYPERLINK SETTINGS
+% ============================================
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=cyan,
+    pdftitle={Lab 06 - Computer Vision},
+    pdfauthor={Bùi Quang Chiến},
+}
+
+% ============================================
+% DOCUMENT BEGIN
+% ============================================
+\begin{document}
+
+% ============================================
+% TITLE PAGE
+% ============================================
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+
+    {\LARGE\bfseries TRƯỜNG ĐẠI HỌC KHOA HỌC TỰ NHIÊN\\[0.3cm]
+    KHOA TOÁN - CƠ - TIN HỌC\\[0.5cm]}
+
+    \begin{figure}[H]
+    	\centering
+    	\includegraphics[width=0.3\linewidth]{../../../../../LOGOHUS}
+    	\label{fig:logohus}
+    \end{figure}
+
+    {\huge\bfseries BÁO CÁO BÀI TẬP TUẦN 6\\[0.5cm]
+    MÔN: THỊ GIÁC MÁY TÍNH (MAT3562E 2)\\[0.5cm]}
+
+    {\Large\bfseries LAB 06: PHÂN ĐOẠN ẢNH\\[0.3cm]
+    DỰA TRÊN VÙNG (REGION-BASED SEGMENTATION)\\[1.5cm]}
+
+    \begin{flushleft}
+    {\large
+    \textbf{Giảng viên:} TS. Cao Văn Chung\\
+    \textbf{Sinh viên:} Bùi Quang Chiến\\
+    \textbf{MSSV:} 23001837\\
+    \textbf{Lớp:} MAT3562E 2\\
+    }
+    \end{flushleft}
+
+    \vfill
+
+    {\large Hà Nội, tháng 3 năm 2026}
+\end{titlepage}
+
+% ============================================
+% TABLE OF CONTENTS
+% ============================================
+\tableofcontents
+\newpage
+
+% ============================================
+% 1. GIỚI THIỆU
+% ============================================
+\section{Giới thiệu}
+
+Bài thực hành Lab 06 tập trung vào \textbf{phân đoạn ảnh dựa trên vùng} (Region-based Segmentation) --- một kỹ thuật quan trọng trong thị giác máy tính. Mục tiêu là phân chia một ảnh thành các vùng có tính chất đồng nhất (cường độ sáng, màu sắc, kết cấu) nhằm phục vụ cho các tác vụ phân tích ảnh tiếp theo.
+
+Hai phương pháp chính được nghiên cứu:
+\begin{itemize}
+    \item \textbf{K-means Clustering}: Phân cụm các điểm ảnh dựa trên đặc trưng (cường độ sáng, tọa độ không gian).
+    \item \textbf{Region Growing}: Phát triển vùng từ điểm hạt giống (seed) dựa trên tiêu chí đồng nhất.
+\end{itemize}
+
+Bài thực hành kết nối các kiến thức nền tảng đã học: histogram, xử lý điểm ảnh, phép toán số học/logic/morphology, lọc ảnh và phát hiện biên --- để xây dựng pipeline phân đoạn hoàn chỉnh.
+
+% ============================================
+% 2. CƠ SỞ LÝ THUYẾT
+% ============================================
+\section{Cơ sở lý thuyết}
+
+\subsection{Thuật toán K-means Clustering}
+
+K-means là thuật toán phân cụm không giám sát, chia tập dữ liệu thành $k$ cụm sao cho tổng bình phương khoảng cách từ mỗi điểm đến tâm cụm gần nhất là nhỏ nhất.
+
+\textbf{Bài toán tối ưu:}
+\[
+    \min_{C_1, \ldots, C_k} \sum_{j=1}^{k} \sum_{\mathbf{x} \in C_j} \lVert \mathbf{x} - \boldsymbol{\mu}_j \rVert^2
+\]
+trong đó $\boldsymbol{\mu}_j$ là tâm (centroid) của cụm $C_j$.
+
+\textbf{Quy trình lặp:}
+\begin{enumerate}
+    \item \textbf{Khởi tạo:} Chọn ngẫu nhiên $k$ tâm cụm $\boldsymbol{\mu}_1, \ldots, \boldsymbol{\mu}_k$.
+    \item \textbf{Gán nhãn:} Gán mỗi điểm $\mathbf{x}$ vào cụm có tâm gần nhất:
+    \[
+        \text{label}(\mathbf{x}) = \arg\min_j \lVert \mathbf{x} - \boldsymbol{\mu}_j \rVert^2
+    \]
+    \item \textbf{Cập nhật tâm:} Tính lại tâm cụm:
+    \[
+        \boldsymbol{\mu}_j = \frac{1}{|C_j|} \sum_{\mathbf{x} \in C_j} \mathbf{x}
+    \]
+    \item \textbf{Kiểm tra hội tụ:} Lặp lại bước 2--3 cho đến khi tâm cụm không thay đổi đáng kể ($\lVert \Delta\boldsymbol{\mu}\rVert < \varepsilon$).
+\end{enumerate}
+
+\textbf{Mở rộng với đặc trưng không gian:} Thay vì chỉ sử dụng cường độ sáng $I$, ta xây dựng vector đặc trưng kết hợp:
+\[
+    \mathbf{x} = \bigl(I,\; w \cdot y/H,\; w \cdot x/W\bigr)
+\]
+trong đó $w$ là trọng số không gian (\texttt{spatial\_weight}), giúp K-means tạo ra các vùng liền mạch hơn.
+
+\subsection{Thuật toán Region Growing}
+
+Region Growing phát triển vùng phân đoạn từ một hoặc nhiều điểm hạt giống (seed) bằng cách kiểm tra và bổ sung các điểm lân cận thỏa mãn tiêu chí đồng nhất.
+
+\textbf{Hai biến thể:}
+
+\begin{enumerate}
+    \item \textbf{Seed Reference (R1):} So sánh cường độ mỗi điểm lân cận với cường độ tại seed ban đầu:
+    \[
+        |I(x, y) - I(\text{seed})| \leq T
+    \]
+    Biến thể này ổn định nhưng không thích ứng tốt với gradient nội vùng.
+
+    \item \textbf{Neighbor Reference (R2):} So sánh cường độ mỗi điểm lân cận với cường độ trung bình hiện tại của vùng đã phát triển:
+    \[
+        |I(x, y) - \bar{I}_{\text{region}}| \leq T
+    \]
+    Biến thể này thích ứng tốt hơn với gradient nhẹ nhưng dễ bị ``rò rỉ'' qua biên.
+\end{enumerate}
+
+\textbf{Kết nối (Connectivity):}
+\begin{itemize}
+    \item \textbf{4-connectivity:} Xét 4 láng giềng (trên, dưới, trái, phải).
+    \item \textbf{8-connectivity:} Xét 8 láng giềng (thêm 4 láng giềng chéo).
+\end{itemize}
+
+% ============================================
+% 3. CÀI ĐẶT THUẬT TOÁN
+% ============================================
+\section{Cài đặt thuật toán}
+
+\subsection{K-means bằng NumPy --- chỉ cường độ sáng}
+
+Hàm \texttt{kmeans\_gray\_intensity} cài đặt K-means hoàn toàn bằng NumPy, sử dụng vector đặc trưng 1 chiều (cường độ sáng).
+
+\begin{lstlisting}
+def kmeans_gray_intensity(gray, k=3, max_iter=30,
+                          tol=1e-4, seed=0):
+    X = gray.astype(np.float32).reshape(-1, 1)
+    rng = np.random.default_rng(seed)
+    init_idx = rng.choice(X.shape[0], size=k,
+                          replace=False)
+    centers = X[init_idx].copy()
+
+    for _ in range(max_iter):
+        dists = np.sum(
+            (X[:, None, :] - centers[None, :, :]) ** 2,
+            axis=2)
+        labels = np.argmin(dists, axis=1)
+
+        new_centers = centers.copy()
+        for c in range(k):
+            pts = X[labels == c]
+            if len(pts) > 0:
+                new_centers[c] = pts.mean(axis=0)
+
+        shift = np.linalg.norm(new_centers - centers)
+        centers = new_centers
+        if shift < tol:
+            break
+
+    label_map = labels.reshape(gray.shape)
+    return label_map, centers.reshape(-1)
+\end{lstlisting}
+
+\textbf{Giải thích:}
+\begin{itemize}
+    \item Flatten ảnh thành vector $N \times 1$ (chỉ intensity).
+    \item Khởi tạo $k$ tâm bằng random sampling.
+    \item Vòng lặp: tính khoảng cách $\to$ gán nhãn $\to$ cập nhật tâm $\to$ kiểm tra hội tụ.
+    \item Trả về \texttt{label\_map} (cùng kích thước ảnh gốc) và tâm cụm.
+\end{itemize}
+
+\subsection{K-means mở rộng --- cường độ + tọa độ}
+
+Hàm \texttt{kmeans\_gray\_intensity\_xy} bổ sung tọa độ chuẩn hóa $(y/H, x/W)$ vào vector đặc trưng với trọng số \texttt{spatial\_weight}:
+
+\begin{lstlisting}
+def kmeans_gray_intensity_xy(gray, k=3,
+            spatial_weight=0.25, max_iter=30,
+            tol=1e-4, seed=0):
+    h, w = gray.shape
+    yy, xx = np.mgrid[0:h, 0:w]
+    I = gray.astype(np.float32) / 255.0
+    X = np.stack([
+        I,
+        spatial_weight * (yy.astype(np.float32)
+                          / max(h - 1, 1)),
+        spatial_weight * (xx.astype(np.float32)
+                          / max(w - 1, 1))
+    ], axis=-1).reshape(-1, 3)
+    # ... (giong kmeans_gray_intensity)
+\end{lstlisting}
+
+Khi \texttt{spatial\_weight} lớn, K-means ưu tiên gần gũi không gian, tạo ra các vùng liền mạch hơn nhưng có thể bỏ qua khác biệt cường độ.
+
+\subsection{K-means bằng OpenCV}
+
+OpenCV cung cấp hàm \texttt{cv2.kmeans} với tính năng \texttt{KMEANS\_PP\_CENTERS} (khởi tạo K-means++) và nhiều lần thử (\texttt{attempts}):
+
+\begin{lstlisting}
+def kmeans_opencv_intensity(gray, k=2, attempts=10):
+    X = gray.reshape(-1, 1).astype(np.float32)
+    criteria = (cv2.TERM_CRITERIA_EPS +
+                cv2.TERM_CRITERIA_MAX_ITER, 50, 0.2)
+    compactness, labels, centers = cv2.kmeans(
+        X, k, None, criteria, attempts,
+        cv2.KMEANS_PP_CENTERS)
+    label_map = labels.reshape(gray.shape)
+    return label_map, centers.reshape(-1), compactness
+\end{lstlisting}
+
+\textbf{Ưu điểm:} Tối ưu hóa tốt hơn nhờ C++ backend và K-means++ initialization.
+
+\subsection{Region Growing --- Seed Reference}
+
+\begin{lstlisting}
+def region_growing_seed_ref(gray, seed,
+                            threshold=10,
+                            connectivity=4):
+    h, w = gray.shape
+    visited = np.zeros((h, w), dtype=bool)
+    region  = np.zeros((h, w), dtype=np.uint8)
+    ref_val = float(gray[seed])
+
+    if connectivity == 8:
+        neighbors = [(-1,-1),(-1,0),(-1,1),
+                     (0,-1),(0,1),
+                     (1,-1),(1,0),(1,1)]
+    else:
+        neighbors = [(-1,0),(1,0),(0,-1),(0,1)]
+
+    q = deque([seed])
+    visited[seed] = True
+    while q:
+        x, y = q.popleft()
+        if abs(float(gray[x, y]) - ref_val) <= threshold:
+            region[x, y] = 255
+            for dx, dy in neighbors:
+                nx, ny = x + dx, y + dy
+                if (0 <= nx < h and 0 <= ny < w
+                    and not visited[nx, ny]):
+                    visited[nx, ny] = True
+                    q.append((nx, ny))
+    return region
+\end{lstlisting}
+
+Thuật toán sử dụng BFS (hàng đợi \texttt{deque}) để duyệt các điểm lân cận. Tiêu chí: $|I(x,y) - I_{\mathrm{seed}}| \leq T$.
+
+\subsection{Region Growing --- Neighbor Reference (Region Mean)}
+
+Biến thể này cập nhật giá trị tham chiếu theo trung bình vùng hiện tại, thích ứng tốt hơn với gradient nhẹ:
+
+\begin{lstlisting}
+def region_growing_region_mean(gray, seed,
+                               threshold=10,
+                               connectivity=4):
+    # ... tuong tu seed_ref nhung:
+    # - Duy tri region_sum va region_count
+    # - ref_val = region_sum / region_count
+    # - Cap nhat khi them diem moi vao vung
+\end{lstlisting}
+
+% ============================================
+% 4. KẾT QUẢ THÍ NGHIỆM
+% ============================================
+\section{Kết quả thí nghiệm}
+
+\subsection{K1: Ảnh hưởng của số cụm $k$}
+
+Thí nghiệm thay đổi $k \in \{2, 3, 4, 5, 6\}$ trên ảnh thực tế (\texttt{house.jpg}) với K-means chỉ dùng cường độ sáng.
+
+\textbf{Nhận xét:}
+\begin{itemize}
+    \item $k = 2$: Phân đoạn thô, chia ảnh thành nền/vật thể.
+    \item $k = 3$--$4$: Cân bằng giữa chi tiết và đơn giản hóa.
+    \item $k \geq 5$: Bắt đầu over-segment, các vùng nhỏ xuất hiện.
+    \item Giá trị $k$ tối ưu phụ thuộc vào ứng dụng cụ thể.
+\end{itemize}
+
+\subsection{K2: Ảnh hưởng của trọng số không gian}
+
+So sánh K-means chỉ intensity với K-means dùng intensity + tọa độ ở các mức \texttt{spatial\_weight} khác nhau.
+
+\textbf{Nhận xét:}
+\begin{itemize}
+    \item \texttt{spatial\_weight = 0}: Tương đương K-means chỉ intensity, vùng có thể rời rạc.
+    \item \texttt{spatial\_weight = 0.25}--$0.5$: Các vùng trở nên liền mạch hơn.
+    \item \texttt{spatial\_weight $\geq$ 0.7}: Gần giống SLIC superpixels, ưu tiên vị trí hơn cường độ.
+\end{itemize}
+
+\subsection{K3: So sánh cài đặt NumPy và OpenCV}
+
+\begin{center}
+\begin{tabular}{@{}lccl@{}}
+    \toprule
+    \textbf{Tiêu chí} & \textbf{NumPy} & \textbf{OpenCV} & \textbf{Ghi chú} \\
+    \midrule
+    Tốc độ & Chậm & Nhanh & OpenCV dùng C++ backend \\
+    Khởi tạo & Random & K-means++ & OpenCV ổn định hơn \\
+    Linh hoạt & Cao & Trung bình & NumPy dễ tùy chỉnh đặc trưng \\
+    Chất lượng & Phụ thuộc seed & Ổn định & Nhiều lần thử (\texttt{attempts}) \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{R1: Region Growing --- ảnh hưởng của threshold}
+
+Thí nghiệm trên ảnh tổng hợp (ellipse trên nền) với $T \in \{5, 10, 20, 40\}$:
+
+\textbf{Nhận xét:}
+\begin{itemize}
+    \item $T$ nhỏ: Vùng nhỏ, nhiễu ít ảnh hưởng, nhưng có thể thiếu sót.
+    \item $T$ lớn: Vùng lớn hơn nhưng dễ ``rò rỉ'' qua biên yếu.
+    \item Cần chọn $T$ phù hợp dựa trên mức nhiễu và tương phản.
+\end{itemize}
+
+\subsection{R2: So sánh Seed Reference và Region Mean}
+
+Trên ảnh có gradient nội vùng, biến thể Region Mean (R2) phát triển vùng rộng hơn nhờ thích ứng dần, nhưng cũng dễ rò rỉ qua biên hơn so với Seed Reference (R1).
+
+\subsection{R3: Ảnh hưởng của connectivity}
+
+So sánh 4-connectivity và 8-connectivity:
+\begin{itemize}
+    \item \textbf{4-connectivity:} Vùng có biên ``vuông vắn'' hơn, ít rò rỉ qua biên chéo.
+    \item \textbf{8-connectivity:} Vùng tự nhiên hơn nhưng dễ rò rỉ qua các góc biên yếu.
+\end{itemize}
+
+% ============================================
+% 5. KẾT LUẬN
+% ============================================
+\section{Kết luận}
+
+Qua bài thực hành, các kết luận chính:
+
+\begin{enumerate}
+    \item \textbf{K-means} là phương pháp đơn giản, không cần seed, nhưng cần biết trước $k$ và không đảm bảo vùng liên thông. Việc bổ sung đặc trưng không gian giúp cải thiện tính liền mạch.
+    \item \textbf{Region Growing} tạo vùng liên thông tự nhiên, nhưng nhạy cảm với vị trí seed và ngưỡng $T$. Biến thể Region Mean thích ứng tốt hơn với gradient nhẹ.
+    \item \textbf{Tiền xử lý} (Gaussian blur, gamma correction) rất quan trọng để giảm nhiễu trước khi phân đoạn.
+    \item Không có phương pháp phân đoạn nào tối ưu cho mọi trường hợp --- cần chọn phương pháp phù hợp với đặc điểm ảnh và yêu cầu ứng dụng.
+\end{enumerate}
+
+\end{document}

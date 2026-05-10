@@ -1,0 +1,128 @@
+\documentclass[9pt,landscape,a4paper]{extarticle}
+\usepackage[utf8]{inputenc}
+\usepackage[vietnamese]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{fontspec}
+\setmainfont{Libertinus Serif} % As per user's font
+
+% Layout and multicolumn
+\usepackage[margin=0.8cm, top=1.5cm, bottom=1.5cm]{geometry}
+\usepackage{multicol}
+\setlength{\columnsep}{0.8cm}
+\setlength{\columnseprule}{0.1pt}
+
+% Math and symbols
+\usepackage{amsmath,amssymb}
+\usepackage{wasysym}
+\usepackage{xcolor}
+
+% Custom Colors (Stanford Cheatsheet style)
+\definecolor{stanfordblue}{RGB}{1, 104, 149}
+\definecolor{stanfordred}{RGB}{140, 21, 21}
+\definecolor{stanfordgreen}{RGB}{0, 100, 0}
+\definecolor{cyanbox}{RGB}{220, 245, 255}
+
+% Section styling (mimicking the sheet)
+\usepackage{titlesec}
+\titleformat{\section}
+  {\normalfont\normalsize\bfseries}{\thesection}{1em}{}
+\titlespacing*{\section}{0pt}{1.5ex plus 1ex minus .2ex}{0.5ex plus .2ex}
+
+\titleformat{\subsection}
+  {\normalfont\small\bfseries}{\thesubsection}{1em}{}
+\titlespacing*{\subsection}{0pt}{1ex plus 1ex minus .2ex}{0.5ex plus .2ex}
+
+% Fancy header
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% Header content
+\lhead{\textsc{MAT3562E} -- \textsc{COMPUTER VISION}}
+\rhead{\colorbox{cyan!20}{\makebox[4cm][c]{\textbf{Bùi Quang Chiến -- 23001837}}}}
+
+% Footer content
+\lfoot{\textsc{HUS -- VNU}}
+\cfoot{\thepage}
+\rfoot{\textsc{SPRING 2026}}
+
+% Dense lists
+\usepackage{enumitem}
+\setlist{nosep, leftmargin=1.2em}
+\setlist[itemize,1]{label={\textcolor{stanfordgreen}{\footnotesize$\square$}}}
+\setlist[itemize,2]{label=--}
+
+\begin{document}
+\begin{center}
+    {\Large \bfseries VIP Cheatsheet: LAB09} \\
+    \vspace{0.3cm}
+    {\large \textsc{Bùi Quang Chiến}} \\
+    \vspace{0.2cm}
+    {\small April 2026}
+\end{center}
+\vspace{0.3cm}
+
+\begin{multicols*}{3}
+
+\begin{center}
+    {\Large \bfseries VIP Cheatsheet: LAB09} \\
+    \vspace{0.3cm}
+    {\large \textsc{Bùi Quang Chiến}} \\
+    \vspace{0.2cm}
+    {\small April 2026}
+\end{center}
+\vspace{0.3cm}
+
+\begin{multicols*}{3}
+
+\begin{center}
+  {\large\bfseries\color{hdr} LAB 09 CHEATSHEET --- Không Gian Màu} \\[1pt]
+  {\small Bùi Quang Chiến \textbullet{} 23001837 \textbullet{} MAT3562E Computer Vision 2025--2026}
+\end{center}
+\hrule\vspace{2pt}
+
+\begin{multicols}{3}
+
+\section{1. Các hệ màu cơ bản}
+\begin{itemize}
+    \item \textbf{RGB (Red, Green, Blue):} Rất thân thiện với thiết bị hiển thị phần cứng. Tuy nhiên kênh R,G,B có tính tương quan chéo bão hòa cực kì cao và thường có phân bố phi tuyến (sRGB).
+    \item \textbf{CIE XYZ:} Hệ màu gốc bao quát. $Y$ mang thông tin độ chói (Luminance). $X, Z$ kết hợp lại mang dữ liệu màu sắc (Chrominance).
+    \item \textbf{CIE Lab ($L^*a^*b^*$):} Tuyệt tác thiết kế hình chiếu bám sát cảm nhận mắt người (Perceptually Uniform). $L^*$ làm độ sáng. $a^*$ mô tả trục đỏ/xanh lục. $b^*$ mô tả trục vàng/xanh lam.
+\end{itemize}
+
+\section{2. Chuyển đổi màu}
+\begin{lstlisting}[language=Python]
+# OpenCV ho tro san
+cv2.cvtColor(img, cv2.COLOR_BGR2XYZ)
+cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+\end{lstlisting}
+
+\begin{tipbox}
+\textbf{Bản chất toán học:}\\
+- \textbf{sRGB to Linear RGB}: Khử gamma (chỉnh lồi phi tuyến thành tuyến tính).\\
+- \textbf{Linear RGB to XYZ}: Nhân ma trận phẳng $3 \times 3$.\\
+- \textbf{XYZ to Lab}: Biến đổi phi tuyến theo điểm trắng tham chiếu (với ánh sáng chuẩn là D65).
+\end{tipbox}
+
+\section{3. Thao tác trên Không gian màu}
+\begin{infobox}
+\textbf{Khoảng cách màu $\Delta E$ (Lab):}\\
+$d_{Lab} = \sqrt{(\Delta L)^2 + (\Delta a)^2 + (\Delta b)^2}$. Đo trực diện độ lệch cảm giác màu giữa 2 vùng. Rất quan trọng khi đối chiếu ảnh gốc.
+\end{infobox}
+\begin{infobox}
+\textbf{Đạo hàm dò viền màu:}\\
+Norm L2 của gradient trên tập kênh XYZ hoặc điểm ảnh $L^* a^* b^*$ sẽ tránh được việc sót biên khi độ sáng giống nhau nhưng màu khác nhau (xem lại Di Zenzo).
+\end{infobox}
+\begin{notebox}
+\textbf{Khử Nhiễu (Denoising):}\\
+Khi dùng Gaussian / Median filter, hãy chẻ không gian màu làm 2 và \textbf{chỉ apply} blur lên kênh độ chói ($Y$ hoặc $L^*$). Tránh làm mờ/hòa trộn lem luốc kênh Chrominance nguy hiểm.
+\end{notebox}
+
+\end{multicols}
+
+\end{multicols*}
+
+\end{multicols*}
+\end{document}

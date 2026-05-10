@@ -1,0 +1,99 @@
+\documentclass[9pt,landscape,a4paper]{extarticle}
+\usepackage[utf8]{inputenc}
+\usepackage[vietnamese]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{fontspec}
+\setmainfont{Libertinus Serif} % As per user's font
+
+% Layout and multicolumn
+\usepackage[margin=0.8cm, top=1.5cm, bottom=1.5cm]{geometry}
+\usepackage{multicol}
+\setlength{\columnsep}{0.8cm}
+\setlength{\columnseprule}{0.1pt}
+
+% Math and symbols
+\usepackage{amsmath,amssymb}
+\usepackage{wasysym}
+\usepackage{xcolor}
+
+% Custom Colors (Stanford Cheatsheet style)
+\definecolor{stanfordblue}{RGB}{1, 104, 149}
+\definecolor{stanfordred}{RGB}{140, 21, 21}
+\definecolor{stanfordgreen}{RGB}{0, 100, 0}
+\definecolor{cyanbox}{RGB}{220, 245, 255}
+
+% Section styling (mimicking the sheet)
+\usepackage{titlesec}
+\titleformat{\section}
+  {\normalfont\normalsize\bfseries}{\thesection}{1em}{}
+\titlespacing*{\section}{0pt}{1.5ex plus 1ex minus .2ex}{0.5ex plus .2ex}
+
+\titleformat{\subsection}
+  {\normalfont\small\bfseries}{\thesubsection}{1em}{}
+\titlespacing*{\subsection}{0pt}{1ex plus 1ex minus .2ex}{0.5ex plus .2ex}
+
+% Fancy header
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% Header content
+\lhead{\textsc{MAT3562E} -- \textsc{COMPUTER VISION}}
+\rhead{\colorbox{cyan!20}{\makebox[4cm][c]{\textbf{Bùi Quang Chiến -- 23001837}}}}
+
+% Footer content
+\lfoot{\textsc{HUS -- VNU}}
+\cfoot{\thepage}
+\rfoot{\textsc{SPRING 2026}}
+
+% Dense lists
+\usepackage{enumitem}
+\setlist{nosep, leftmargin=1.2em}
+\setlist[itemize,1]{label={\textcolor{stanfordgreen}{\footnotesize$\square$}}}
+\setlist[itemize,2]{label=--}
+
+\begin{document}
+\begin{center}
+    {\Large \bfseries VIP Cheatsheet: LAB01} \\
+    \vspace{0.3cm}
+    {\large \textsc{Bùi Quang Chiến}} \\
+    \vspace{0.2cm}
+    {\small April 2026}
+\end{center}
+\vspace{0.3cm}
+
+\begin{multicols*}{3}
+
+\begin{center}
+    {\Large \bfseries VIP Cheatsheet: Lab 01: Nhập môn Xử lý ảnh cơ bản} \\
+    \vspace{0.3cm}
+    {\large \textsc{Bùi Quang Chiến}} \\
+    \vspace{0.2cm}
+    {\small April 2026}
+\end{center}
+\vspace{0.3cm}
+
+\begin{multicols*}{3}
+
+\section{Đọc, Ghi và Hiển thị Ảnh (OpenCV)}
+\begin{itemize}
+    \item \texttt{cv2.imread(filepath, flag)}: Đọc ảnh. Flag \texttt{cv2.IMREAD\_COLOR} (mặc định BGR), \texttt{cv2.IMREAD\_GRAYSCALE} (ảnh xám).
+    \item \texttt{cv2.imwrite(filepath, img)}: Lưu ảnh ra file.
+    \item \texttt{cv2.imshow(winname, img)}: Hiển thị ảnh (kèm \texttt{cv2.waitKey(0)} để dừng màn hình).
+    \item Chuyển đổi màu: \texttt{cv2.cvtColor(img, cv2.COLOR\_BGR2RGB)} (để hiển thị đúng bằng Matplotlib).
+\end{itemize}
+
+\section{Numpy trong Xử lý ảnh}
+\begin{itemize}
+    \item Kích thước ảnh: \texttt{h, w, c = img.shape}.
+    \item Loại dữ liệu: \texttt{img.dtype} (thường là \texttt{uint8} [0, 255] hoặc \texttt{float32} [0, 1]).
+    \item Truy xuất pixel: \texttt{img[y, x]} hoặc \texttt{img[y, x, channel]}.
+    \item Cắt vùng ảnh (Crop): \texttt{roi = img[y1:y2, x1:x2]}.
+\end{itemize}
+
+\end{multicols*}
+
+\end{multicols*}
+\end{document}

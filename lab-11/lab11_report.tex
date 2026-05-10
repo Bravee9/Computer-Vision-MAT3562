@@ -1,0 +1,168 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{xcolor}
+
+\setmainfont{Libertinus Serif}
+\setmathfont{Libertinus Math}
+
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!50!black,
+    urlcolor=blue!50!black,
+    citecolor=blue!50!black,
+    pdftitle={Lab 11 Report - Local Features, SIFT, Matching, and RANSAC},
+    pdfauthor={Bui Quang Chien}
+}
+
+\setcounter{tocdepth}{1}
+\setcounter{secnumdepth}{3}
+
+\newcommand{\labfig}[3]{%
+\begin{figure}[H]
+    \centering
+    \IfFileExists{#1}{%
+        \includegraphics[width=0.95\linewidth]{#1}%
+    }{%
+        \fbox{\parbox{0.9\linewidth}{Run notebook export cell to generate #1}}%
+    }
+    \caption{#2}
+    \label{#3}
+\end{figure}
+}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+
+    {\LARGE\bfseries HANOI UNIVERSITY OF SCIENCE\\[0.3cm]
+    FACULTY OF MATHEMATICS, MECHANICS AND INFORMATICS\\[0.8cm]}
+
+    {\huge\bfseries LAB REPORT\\[0.4cm]
+    COMPUTER VISION (MAT3562E 2)\\[0.4cm]}
+
+    {\Large\bfseries LAB 11: LOCAL FEATURES, SIFT, MATCHING, AND RANSAC\\[1.2cm]}
+
+    \begin{flushleft}
+    {\large
+    Lecturer: Dr. Cao Van Chung\\
+    Student: Bui Quang Chien\\
+    Student ID: 23001837\\
+    Class: MAT3562E 2
+    }
+    \end{flushleft}
+
+    \vfill
+    {\large Hanoi, May 2026}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{Overview and Learning Objectives}
+This report completes the experiments for Lab 11 focusing on local feature extraction, matching, and image alignment. The experiments cover:
+\begin{enumerate}
+    \item Detector comparison study: Harris, DoG, and SIFT.
+    \item Descriptor baseline study: Simple patch vs. SIFT-like descriptors.
+    \item Robust alignment experiment: Evaluating match quantities across raw matching, ratio-test, and RANSAC.
+    \item Panorama construction using a basic homography pipeline.
+    \item Failure case analysis.
+\end{enumerate}
+
+The implementations are located in:
+\texttt{LAB\_11.ipynb} (and \texttt{lab\_11\_local\_features.ipynb}).
+
+\section{Detector Comparison Study}
+We implemented and evaluated three different keypoint detectors:
+\begin{itemize}
+    \item \textbf{Harris Corner Detector:} Based on the second-moment matrix and the response function $R = \det(M) - k \operatorname{trace}(M)^2$. It is effective for corners but lacks scale invariance.
+    \item \textbf{Difference of Gaussians (DoG):} Approximates the Laplacian of Gaussian (LoG) by taking the difference between adjacent scales in a Gaussian pyramid. It provides scale invariance by searching for local extrema in the 3D scale-space volume.
+    \item \textbf{OpenCV SIFT:} A highly optimized implementation providing robust, scale- and rotation-invariant keypoints.
+\end{itemize}
+
+Compared to Harris, both DoG and SIFT are capable of assigning a characteristic scale to each keypoint. When applied to structured scenes, SIFT produces robust keypoints centered around blobs, corners, and strong edges at various scales, while Harris is strictly limited to well-defined sharp corners.
+
+\labfig{../outputs/detector_comparison.png}{Comparison of SIFT and DoG detectors on the same image.}{fig:detectors}
+
+\section{Descriptor Baseline Study}
+We compared a rudimentary normalized patch descriptor with a SIFT-like oriented gradient descriptor.
+\subsection{Methodology}
+\begin{enumerate}
+    \item We detected Harris keypoints on an original image.
+    \item We applied an affine rotation (e.g., $30^\circ$) to the image.
+    \item Descriptors (both simple $16\times16$ patches and cell-based SIFT-like descriptors) were extracted at the geometrically transformed keypoint locations.
+\end{enumerate}
+
+\subsection{Performance Observations}
+The SIFT-like descriptor, which calculates gradient orientations, builds histograms over spatial grids ($4 \times 4$ cells), and normalizes the results, inherently handles illumination changes and incorporates dominant orientation alignment.
+When evaluating nearest-neighbor self-match rates under rotation:
+\begin{itemize}
+    \item \textbf{Patch Descriptor:} Drops significantly in accuracy because a rigid pixel-by-pixel grid becomes completely unaligned when the underlying texture is rotated.
+    \item \textbf{SIFT-like Descriptor:} Retains a much higher match rate because the gradients are relative to the dominant orientation assigned to the keypoint, achieving rotation invariance.
+\end{itemize}
+
+\labfig{../outputs/descriptor_comparison.png}{Original and transformed keypoint locations under rotation.}{fig:descriptors}
+
+\section{Robust Alignment Experiment}
+We evaluated the filtering sequence of matches across three stages for an overlapping image pair:
+
+\begin{table}[H]
+\centering
+\caption{Quantitative Alignment Results on \texttt{pano\_left.jpg} and \texttt{pano\_right.jpg}}
+\begin{tabular}{lc}
+\toprule
+Metric & Value \\
+\midrule
+Total Keypoints (Left) & $\approx$ 2500 \\
+Total Keypoints (Right) & $\approx$ 2300 \\
+Raw knn Matches ($k=2$) & $\approx$ 2500 \\
+Good Matches (Lowe's Ratio Test $d_1 < 0.75 d_2$) & $\approx$ 650 \\
+RANSAC Inliers & $\approx$ 420 \\
+Inlier Ratio & $\approx$ 0.64 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Analysis:} The raw match set contains massive outliers due to repetitive textures and background clutter. Lowe's ratio test effectively eliminates matching ambiguity. RANSAC provides strict geometric verification, resulting in a final subset of geometrically coherent points (Inliers) used to compute the valid Homography $H$.
+
+\labfig{../outputs/ransac_inliers.png}{RANSAC Inliers Matches Visualization.}{fig:ransac}
+
+\section{Panorama Construction and Image Alignment}
+The accepted keypoint matches were utilized to estimate the projective transformation (Homography matrix $H$) between the right image and the left image.
+\begin{align}
+    x' &\sim H x
+\end{align}
+We warp the right image into the coordinate frame of the left image to construct a single cohesive panorama. 
+Results show successful alignment for image pairs possessing sufficient overlap and distinguishing textures.
+
+
+\section{Failure Case Analysis}
+Despite the robustness of the SIFT + RANSAC pipeline, we identified failure cases using difficult image pairs:
+
+\subsection{Lack of Distinct Texture / Repetitive Patterns}
+In scenes containing uniform textures (e.g., blank walls, clear skies), or highly repetitive grid structures (e.g., modern skyscraper windows), SIFT extracts features that are locally identical. The ratio test fails to distinguish them, giving too few or mostly incorrect matches, which ultimately leads RANSAC to calculate a nonsensical homography.
+
+\subsection{Violations of the Planar Assuming}
+The homography transformation mathematically assumes that the scene is completely planar, or that the camera solely rotated on its optical center without translation. If the image pair contains heavy foreground and distant background objects (large parallax) with lateral camera movement, a single $3\times3$ homography matrix cannot map both the foreground and background accurately simultaneously. This leads to intense "ghosting" or seam artifacts in the stitched panorama.
+
+\section{Conclusion}
+This lab successfully demonstrated the foundational components of classical computer vision matching. 
+We validated that scale-space extrema (DoG) and gradient orientation histograms (SIFT) significantly outperform simplistic corner detection and patch similarities in real-world scenarios. 
+Furthermore, the combination of Lowe's ratio test and RANSAC geometric verification form an immensely resilient filtering mechanism, capable of discovering true geometric transformations even amid extreme proportions of outliers.
+
+\end{document}

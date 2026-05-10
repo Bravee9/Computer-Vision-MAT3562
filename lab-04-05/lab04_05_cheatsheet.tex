@@ -1,0 +1,157 @@
+\documentclass[9pt,landscape,a4paper]{extarticle}
+\usepackage[utf8]{inputenc}
+\usepackage[vietnamese]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{fontspec}
+\setmainfont{Libertinus Serif} % As per user's font
+
+% Layout and multicolumn
+\usepackage[margin=0.8cm, top=1.5cm, bottom=1.5cm]{geometry}
+\usepackage{multicol}
+\setlength{\columnsep}{0.8cm}
+\setlength{\columnseprule}{0.1pt}
+
+% Math and symbols
+\usepackage{amsmath,amssymb}
+\usepackage{wasysym}
+\usepackage{xcolor}
+
+% Custom Colors (Stanford Cheatsheet style)
+\definecolor{stanfordblue}{RGB}{1, 104, 149}
+\definecolor{stanfordred}{RGB}{140, 21, 21}
+\definecolor{stanfordgreen}{RGB}{0, 100, 0}
+\definecolor{cyanbox}{RGB}{220, 245, 255}
+
+% Section styling (mimicking the sheet)
+\usepackage{titlesec}
+\titleformat{\section}
+  {\normalfont\normalsize\bfseries}{\thesection}{1em}{}
+\titlespacing*{\section}{0pt}{1.5ex plus 1ex minus .2ex}{0.5ex plus .2ex}
+
+\titleformat{\subsection}
+  {\normalfont\small\bfseries}{\thesubsection}{1em}{}
+\titlespacing*{\subsection}{0pt}{1ex plus 1ex minus .2ex}{0.5ex plus .2ex}
+
+% Fancy header
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% Header content
+\lhead{\textsc{MAT3562E} -- \textsc{COMPUTER VISION}}
+\rhead{\colorbox{cyan!20}{\makebox[4cm][c]{\textbf{Bùi Quang Chiến -- 23001837}}}}
+
+% Footer content
+\lfoot{\textsc{HUS -- VNU}}
+\cfoot{\thepage}
+\rfoot{\textsc{SPRING 2026}}
+
+% Dense lists
+\usepackage{enumitem}
+\setlist{nosep, leftmargin=1.2em}
+\setlist[itemize,1]{label={\textcolor{stanfordgreen}{\footnotesize$\square$}}}
+\setlist[itemize,2]{label=--}
+
+\begin{document}
+\begin{center}
+    {\Large \bfseries VIP Cheatsheet: LAB04_05} \\
+    \vspace{0.3cm}
+    {\large \textsc{Bùi Quang Chiến}} \\
+    \vspace{0.2cm}
+    {\small April 2026}
+\end{center}
+\vspace{0.3cm}
+
+\begin{multicols*}{3}
+
+\begin{center}
+    {\Large \bfseries VIP Cheatsheet: LAB04_05} \\
+    \vspace{0.3cm}
+    {\large \textsc{Bùi Quang Chiến}} \\
+    \vspace{0.2cm}
+    {\small April 2026}
+\end{center}
+\vspace{0.3cm}
+
+\begin{multicols*}{3}
+
+\begin{center}
+  {\large\bfseries\color{hdr} LAB 04-05 CHEATSHEET --- Biến đổi Hình \& Hình thái học} \\[1pt]
+  {\small Bùi Quang Chiến \textbullet{} 23001837 \textbullet{} MAT3562E Computer Vision 2025--2026}
+\end{center}
+\hrule\vspace{2pt}
+
+\begin{multicols}{3}
+
+\section{1. Biến đổi Hình học (Geometric Transformations)}
+
+\subsection*{Tịnh tiến (Translation)}
+Ma trận tịnh tiến: $M = \begin{bmatrix} 1 & 0 & t_x \\ 0 & 1 & t_y \end{bmatrix}$.\\
+\begin{lstlisting}[language=Python]
+cv2.warpAffine(img, M, (w, h))
+\end{lstlisting}
+
+\subsection*{Co giãn (Scaling)}
+Ma trận co giãn: $M = \begin{bmatrix} s_x & 0 & 0 \\ 0 & s_y & 0 \end{bmatrix}$.\\
+\begin{lstlisting}[language=Python]
+cv2.resize(img, None, fx=s_x, fy=s_y, interpolation=cv2.INTER_LINEAR)
+\end{lstlisting}
+
+\subsection*{Xoay (Rotation)}
+Xoay quanh tâm \texttt{center} với góc \texttt{angle}:
+\begin{lstlisting}[language=Python]
+M = cv2.getRotationMatrix2D(center, angle, scale)
+cv2.warpAffine(img, M, (new_w, new_h))
+\end{lstlisting}
+
+\subsection*{Kéo lệch (Shear / Skew)}
+Ngang: $M = \begin{bmatrix} 1 & k & 0 \\ 0 & 1 & 0 \end{bmatrix}$. Dọc: $M = \begin{bmatrix} 1 & 0 & 0 \\ k & 1 & 0 \end{bmatrix}$.
+\begin{lstlisting}[language=Python]
+cv2.warpAffine(img, M, (new_w, new_h))
+\end{lstlisting}
+
+\begin{tipbox}
+\textbf{Kiểm soát Canvas \& Padding:}\\
+Dùng \texttt{borderMode=cv2.BORDER\_CONSTANT} và \texttt{borderValue=0} để điền viền đen. Ánh xạ ngược (Inverse Mapping) loại bỏ hiện tượng lỗ hở (holes).
+\end{tipbox}
+
+\section{2. Hình thái học (Morphological Operations)}
+
+\begin{lstlisting}[language=Python]
+# Hạt nhân cấu trúc (kernel)
+kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+\end{lstlisting}
+
+\begin{infobox}
+\textbf{Co (Erosion):} \texttt{cv2.erode(img, kernel)}\\
+Làm mỏng đối tượng, xóa nét gai nhỏ, xẻ các đoạn dính hẹp trên đường biên. (Min cục bộ).
+\end{infobox}
+
+\begin{infobox}
+\textbf{Giãn (Dilation):} \texttt{cv2.dilate(img, kernel)}\\
+Làm dày đường nét đối tượng, nối đứt gãy bên trong đối tượng. (Max cục bộ).
+\end{infobox}
+
+\begin{infobox}
+\textbf{Mở (Opening):} \texttt{cv2.morphologyEx(..., cv2.MORPH\_OPEN)}\\
+\textbf{Co $\to$ Giãn.} Gạt bỏ sạn sáng nhỏ li ti bên ngoài vật thể, dọn sạch gai biên nhọn. Tỷ lệ cốt lõi được bảo toàn.
+\end{infobox}
+
+\begin{infobox}
+\textbf{Đóng (Closing):} \texttt{cv2.morphologyEx(..., cv2.MORPH\_CLOSE)}\\
+\textbf{Giãn $\to$ Co.} Trám đầy kẽ nứt hở hay lõm thụt sẹo li ti nằm trọn phía trong cấu trúc mạch.
+\end{infobox}
+
+\begin{notebox}
+\textbf{Pipeline Y Tế Phổ Biến:}\\
+Khử mờ $\to$ Threshold (Otsu) $\to$ \textbf{Opening} (xóa nhiễu rác ngoài biên) $\to$ \textbf{Closing} (vá thủng bên trong khối).
+\end{notebox}
+
+\end{multicols}
+
+\end{multicols*}
+
+\end{multicols*}
+\end{document}

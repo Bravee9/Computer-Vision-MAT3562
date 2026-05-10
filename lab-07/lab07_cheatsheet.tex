@@ -1,0 +1,133 @@
+\documentclass[9pt,landscape,a4paper]{extarticle}
+\usepackage[utf8]{inputenc}
+\usepackage[vietnamese]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{fontspec}
+\setmainfont{Libertinus Serif} % As per user's font
+
+% Layout and multicolumn
+\usepackage[margin=0.8cm, top=1.5cm, bottom=1.5cm]{geometry}
+\usepackage{multicol}
+\setlength{\columnsep}{0.8cm}
+\setlength{\columnseprule}{0.1pt}
+
+% Math and symbols
+\usepackage{amsmath,amssymb}
+\usepackage{wasysym}
+\usepackage{xcolor}
+
+% Custom Colors (Stanford Cheatsheet style)
+\definecolor{stanfordblue}{RGB}{1, 104, 149}
+\definecolor{stanfordred}{RGB}{140, 21, 21}
+\definecolor{stanfordgreen}{RGB}{0, 100, 0}
+\definecolor{cyanbox}{RGB}{220, 245, 255}
+
+% Section styling (mimicking the sheet)
+\usepackage{titlesec}
+\titleformat{\section}
+  {\normalfont\normalsize\bfseries}{\thesection}{1em}{}
+\titlespacing*{\section}{0pt}{1.5ex plus 1ex minus .2ex}{0.5ex plus .2ex}
+
+\titleformat{\subsection}
+  {\normalfont\small\bfseries}{\thesubsection}{1em}{}
+\titlespacing*{\subsection}{0pt}{1ex plus 1ex minus .2ex}{0.5ex plus .2ex}
+
+% Fancy header
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% Header content
+\lhead{\textsc{MAT3562E} -- \textsc{COMPUTER VISION}}
+\rhead{\colorbox{cyan!20}{\makebox[4cm][c]{\textbf{Bùi Quang Chiến -- 23001837}}}}
+
+% Footer content
+\lfoot{\textsc{HUS -- VNU}}
+\cfoot{\thepage}
+\rfoot{\textsc{SPRING 2026}}
+
+% Dense lists
+\usepackage{enumitem}
+\setlist{nosep, leftmargin=1.2em}
+\setlist[itemize,1]{label={\textcolor{stanfordgreen}{\footnotesize$\square$}}}
+\setlist[itemize,2]{label=--}
+
+\begin{document}
+\begin{center}
+    {\Large \bfseries VIP Cheatsheet: LAB07} \\
+    \vspace{0.3cm}
+    {\large \textsc{Bùi Quang Chiến}} \\
+    \vspace{0.2cm}
+    {\small April 2026}
+\end{center}
+\vspace{0.3cm}
+
+\begin{multicols*}{3}
+
+\begin{center}
+    {\Large \bfseries VIP Cheatsheet: LAB07} \\
+    \vspace{0.3cm}
+    {\large \textsc{Bùi Quang Chiến}} \\
+    \vspace{0.2cm}
+    {\small April 2026}
+\end{center}
+\vspace{0.3cm}
+
+\begin{multicols*}{3}
+
+\begin{center}
+  {\large\bfseries\color{hdr} LAB 07 CHEATSHEET --- Phân Đoạn Biên} \\[1pt]
+  {\small Bùi Quang Chiến \textbullet{} 23001837 \textbullet{} MAT3562E Computer Vision 2025--2026}
+\end{center}
+\hrule\vspace{2pt}
+
+\begin{multicols}{3}
+
+\section{1. Derivative Filters (Đạo Hàm Ảnh Xám)}
+\begin{itemize}
+    \item \textbf{Cơ bản:} Đo sự chênh lệch $G_x = I(x+1, y) - I(x-1, y)$.
+    \item \textbf{Sobel:} \texttt{cv2.Sobel(img, ddepth, dx, dy, ksize)}.\\
+        Gradient $\nabla f = [g_x, g_y]^T$.\\
+        Biên độ: $M = \sqrt{g_x^2 + g_y^2}$.\\
+        Góc: $\theta = \tan^{-1}(g_y/g_x)$.
+    \item \textbf{Prewitt / Scharr:} Kernel chập đạo hàm với trọng số khác biệt (chi tiết và nhạy hơn).
+\end{itemize}
+
+\section{2. Dò Biên Canny (Canny Edge Detection)}
+Thuật toán tối ưu tách nét với 4 bước cốt lõi:
+\begin{enumerate}
+    \item \textbf{Làm mịn ảnh} (Gaussian Blur) giảm bớt nhiễu xám.
+    \item \textbf{Tính toán Gradient} ($M$ và $\theta$).
+    \item \textbf{Non-Maximum Suppression:} Khử điểm không cực đại, mỏng hóa biên chỉ giữ 1 nét cực đỉnh sáng liền mạch. 
+    \item \textbf{Hysteresis Thresholding:} Lọc ngưỡng kép (\texttt{minVal}, \texttt{maxVal}). Kết nối biên mạnh sang biên yếu, loại bỏ hoàn toàn nhiễu dưới Threshold.
+\end{enumerate}
+\begin{lstlisting}[language=Python]
+edges = cv2.Canny(image, minVal, maxVal)
+\end{lstlisting}
+
+\section{3. Chuyển Đổi Hough (Hough Transform)}
+Phát hiện hình dạng thông qua không gian tham số.
+\begin{tipbox}
+\textbf{Đường thẳng (HoughLines):} Tham số $(\rho, \theta)$. 1 đường thẳng = 1 điểm trong không gian Hough. Hàm \texttt{cv2.HoughLinesP} dễ dùng và vẽ đoạn thẳng trực tiếp tốt hơn \texttt{cv2.HoughLines}.
+\end{tipbox}
+\begin{tipbox}
+\textbf{Đường tròn (HoughCircles):} Tham số $(a, b, r)$. Cho phép bắt đường cong, cốc, tiền xu, con ngươi. OpenCV ngầm chạy Canny Edge bên trong với \texttt{cv2.HOUGH\_GRADIENT}.
+\end{tipbox}
+
+\section{4. Nối Biên Thành Miền Kín (Edge-To-Region)}
+Khi cần tạo object Mask từ Canny Edge:
+\begin{lstlisting}[language=Python]
+1. edges = cv2.Canny(...)
+2. closed = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel) # Boc dut vien
+3. contours, _ = cv2.findContours(...)
+4. cv2.fillPoly(mask, contours, 255)
+\end{lstlisting}
+
+\end{multicols}
+
+\end{multicols*}
+
+\end{multicols*}
+\end{document}

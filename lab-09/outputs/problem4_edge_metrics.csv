@@ -1,0 +1,33 @@
+group,file,method,threshold,edge_ratio,contour_count
+outdoor,outdoor1.jpg,Gray,0.14795838296413422,0.1,670
+outdoor,outdoor1.jpg,Y (XYZ),0.12446311116218567,0.1,626
+outdoor,outdoor1.jpg,XYZ,0.19510027766227722,0.1,752
+outdoor,outdoor1.jpg,Lab,19.753938674926758,0.1,412
+outdoor,outdoor2.jpg,Gray,0.12747424840927124,0.1,650
+outdoor,outdoor2.jpg,Y (XYZ),0.13089415431022644,0.1,541
+outdoor,outdoor2.jpg,XYZ,0.21685189008712769,0.1,432
+outdoor,outdoor2.jpg,Lab,16.18280029296875,0.10001467136150236,406
+multicolors,multicolors2.png,Gray,0.09905799478292465,0.1,546
+multicolors,multicolors2.png,Y (XYZ),0.07102417200803757,0.1,624
+multicolors,multicolors2.png,XYZ,0.11254305392503738,0.1,614
+multicolors,multicolors2.png,Lab,16.30878448486328,0.1,418
+multicolors,multicolors3.png,Gray,0.13748857378959656,0.1,1022
+multicolors,multicolors3.png,Y (XYZ),0.12629850208759308,0.1,862
+multicolors,multicolors3.png,XYZ,0.26078540086746216,0.1,939
+multicolors,multicolors3.png,Lab,23.573434829711914,0.1,878
+shadow,shadow1.jpg,Gray,0.12975528836250305,0.1,434
+shadow,shadow1.jpg,Y (XYZ),0.10821229219436646,0.1,271
+shadow,shadow1.jpg,XYZ,0.2110241949558258,0.1,229
+shadow,shadow1.jpg,Lab,18.564544677734375,0.1,307
+shadow,shadow2.png,Gray,0.12367798388004303,0.1,258
+shadow,shadow2.png,Y (XYZ),0.10645389556884766,0.1,214
+shadow,shadow2.png,XYZ,0.19612829387187958,0.1,185
+shadow,shadow2.png,Lab,15.023286819458008,0.1,274
+fruit,fruit1.png,Gray,0.21167615056037903,0.1,461
+fruit,fruit1.png,Y (XYZ),0.1730290800333023,0.1,518
+fruit,fruit1.png,XYZ,0.2827158272266388,0.1,510
+fruit,fruit1.png,Lab,31.757699966430664,0.1,631
+fruit,fruit2 (1).jpg,Gray,0.17813421785831451,0.1,538
+fruit,fruit2 (1).jpg,Y (XYZ),0.1467941552400589,0.1,397
+fruit,fruit2 (1).jpg,XYZ,0.2225363701581955,0.1,458
+fruit,fruit2 (1).jpg,Lab,26.676288604736328,0.1,479

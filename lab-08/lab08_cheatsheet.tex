@@ -1,0 +1,133 @@
+\documentclass[9pt,landscape,a4paper]{extarticle}
+\usepackage[utf8]{inputenc}
+\usepackage[vietnamese]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{fontspec}
+\setmainfont{Libertinus Serif} % As per user's font
+
+% Layout and multicolumn
+\usepackage[margin=0.8cm, top=1.5cm, bottom=1.5cm]{geometry}
+\usepackage{multicol}
+\setlength{\columnsep}{0.8cm}
+\setlength{\columnseprule}{0.1pt}
+
+% Math and symbols
+\usepackage{amsmath,amssymb}
+\usepackage{wasysym}
+\usepackage{xcolor}
+
+% Custom Colors (Stanford Cheatsheet style)
+\definecolor{stanfordblue}{RGB}{1, 104, 149}
+\definecolor{stanfordred}{RGB}{140, 21, 21}
+\definecolor{stanfordgreen}{RGB}{0, 100, 0}
+\definecolor{cyanbox}{RGB}{220, 245, 255}
+
+% Section styling (mimicking the sheet)
+\usepackage{titlesec}
+\titleformat{\section}
+  {\normalfont\normalsize\bfseries}{\thesection}{1em}{}
+\titlespacing*{\section}{0pt}{1.5ex plus 1ex minus .2ex}{0.5ex plus .2ex}
+
+\titleformat{\subsection}
+  {\normalfont\small\bfseries}{\thesubsection}{1em}{}
+\titlespacing*{\subsection}{0pt}{1ex plus 1ex minus .2ex}{0.5ex plus .2ex}
+
+% Fancy header
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% Header content
+\lhead{\textsc{MAT3562E} -- \textsc{COMPUTER VISION}}
+\rhead{\colorbox{cyan!20}{\makebox[4cm][c]{\textbf{Bùi Quang Chiến -- 23001837}}}}
+
+% Footer content
+\lfoot{\textsc{HUS -- VNU}}
+\cfoot{\thepage}
+\rfoot{\textsc{SPRING 2026}}
+
+% Dense lists
+\usepackage{enumitem}
+\setlist{nosep, leftmargin=1.2em}
+\setlist[itemize,1]{label={\textcolor{stanfordgreen}{\footnotesize$\square$}}}
+\setlist[itemize,2]{label=--}
+
+\begin{document}
+\begin{center}
+    {\Large \bfseries VIP Cheatsheet: LAB08} \\
+    \vspace{0.3cm}
+    {\large \textsc{Bùi Quang Chiến}} \\
+    \vspace{0.2cm}
+    {\small April 2026}
+\end{center}
+\vspace{0.3cm}
+
+\begin{multicols*}{3}
+
+\begin{center}
+    {\Large \bfseries VIP Cheatsheet: LAB08} \\
+    \vspace{0.3cm}
+    {\large \textsc{Bùi Quang Chiến}} \\
+    \vspace{0.2cm}
+    {\small April 2026}
+\end{center}
+\vspace{0.3cm}
+
+\begin{multicols*}{3}
+
+\begin{center}
+  {\large\bfseries\color{hdr} LAB 08 CHEATSHEET --- Phân Đoạn \& Màu Cơ Bản} \\[1pt]
+  {\small Bùi Quang Chiến \textbullet{} 23001837 \textbullet{} MAT3562E Computer Vision 2025--2026}
+\end{center}
+\hrule\vspace{2pt}
+
+\begin{multicols}{3}
+
+\section{1. Các Threshold trên Ảnh Màu}
+\begin{itemize}
+    \item \textbf{Otsu trên G/B/L* hoặc V}: Phù hợp khi vật thể sáng/tối phân minh.
+    \item \textbf{Otsu trên S (Saturation)}: Rất hiệu quả nếu vật thể có màu nổi bật (colorful) trên phông nền xám/đơn sắc.
+\end{itemize}
+\begin{tipbox}
+\textbf{Mô hình HSV 2 bước:}\\
+1. Threshold trên S loại bỏ background xám.\\
+2. Threshold trên V bên trong mask S để phân tầng độ sáng.
+\end{tipbox}
+\begin{tipbox}
+\textbf{Lab Distance Threshold:}\\
+$d(x,y) = \|c_{\mathrm{Lab}}(x,y) - c_{0,\mathrm{Lab}}\|_2$\\
+Nghịch đảo Otsu hoặc fixed threshold $T$ trên ma trận khoảng cách $d$.
+\end{tipbox}
+
+\section{2. Dò Biên Màu (Color Edge Detection)}
+\begin{itemize}
+    \item \textbf{Đa kênh Canny}: Tách R,G,B $\to$ Canny từng kênh $\to$ Hợp (OR). Gây trùng viền và nhiều nhiễu mép.
+    \item \textbf{Di Zenzo Gradient}: Mô hình Tensor.\\
+    $g_{xx} = I_x^\top I_x$, $\quad g_{yy} = I_y^\top I_y$, $\quad g_{xy} = I_x^\top I_y$.\\
+    Biên độ: $M = \sqrt{\frac{1}{2}\left(g_{xx} + g_{yy} + \sqrt{(g_{xx}-g_{yy})^2 + 4g_{xy}^2}\right)}$.\\
+    Phát hiện được nét khác màu nhưng cùng chói!
+    \item \textbf{Color Canny}: Dùng $M$ và $\theta$ Di Zenzo làm đầu vào cho NMS và Hysteresis $\to$ Cực xịn.
+\end{itemize}
+
+\section{3. Phân Đoạn (Segmentation)}
+\begin{infobox}
+\textbf{Region Growing (Phát triển vùng):}\\
+Hoạt động cực mịn ở không gian Lab do sự tách biệt kênh chói. Metric L2 trong Lab tuân thủ nghiêm ngặt cảm nhận mắt người.
+\end{infobox}
+\begin{infobox}
+\textbf{K-means Tọa độ (Spatial Coherence):}\\
+Feature: $f(x,y) = [L^*, a^*, b^*, \lambda x, \lambda y]$. Trọng số $\lambda$ ép siêu điểm gần gũi đứng cạnh nhau phải về cùng 1 Cluster.
+\end{infobox}
+\begin{infobox}
+\textbf{Split \& Merge:}\\
+Chia \textbf{tứ phân} nếu Phương sai $\max_c \text{Var}_c(R) > T_{\sigma^2}$. Ghép lại lân cận nếu Mean tương đồng.
+\end{infobox}
+
+\end{multicols}
+
+\end{multicols*}
+
+\end{multicols*}
+\end{document}

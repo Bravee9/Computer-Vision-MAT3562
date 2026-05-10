@@ -1,0 +1,12 @@
+metric,value
+Total TP,44.0
+Total FP (near-miss),6.0
+Total FP (background),74.0
+Total FN,6.0
+Precision,0.3548
+Recall,0.88
+F1,0.5057
+Mean IoU on TP,0.6669
+FN small,3.0
+FN medium,3.0
+FN large,0.0

@@ -1,0 +1,284 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{xcolor}
+
+\setmainfont{Libertinus Serif}
+\setmathfont{Libertinus Math}
+
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!50!black,
+    urlcolor=blue!50!black,
+    citecolor=blue!50!black,
+    pdftitle={Lab 10 Report - HOG and Applications},
+    pdfauthor={Bui Quang Chien}
+}
+
+\setcounter{tocdepth}{1}
+\setcounter{secnumdepth}{3}
+
+\newcommand{\labfig}[3]{%
+\begin{figure}[H]
+    \centering
+    \IfFileExists{#1}{%
+        \includegraphics[width=0.95\linewidth]{#1}%
+    }{%
+        \fbox{\parbox{0.9\linewidth}{Run notebook export cell to generate #1}}%
+    }
+    \caption{#2}
+    \label{#3}
+\end{figure}
+}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+
+    {\LARGE\bfseries HANOI UNIVERSITY OF SCIENCE\\[0.3cm]
+    FACULTY OF MATHEMATICS, MECHANICS AND INFORMATICS\\[0.8cm]}
+
+    {\huge\bfseries LAB REPORT\\[0.4cm]
+    COMPUTER VISION (MAT3562E 2)\\[0.4cm]}
+
+    {\Large\bfseries LAB 10: HISTOGRAM OF ORIENTED GRADIENTS (HOG)\\
+    AND ITS APPLICATIONS\\[1.2cm]}
+
+    \begin{flushleft}
+    {\large
+    Lecturer: Dr. Cao Van Chung\\
+    Student: Bui Quang Chien\\
+    Student ID: 23001837\\
+    Class: MAT3562E 2
+    }
+    \end{flushleft}
+
+    \vfill
+    {\large Hanoi, April 2026}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{Overview and Learning Objectives}
+This report completes all core requirements for Lab 10:
+\begin{enumerate}
+    \item Manual HOG implementation from scratch using NumPy.
+    \item Comparison against \texttt{scikit-image} HOG.
+    \item Two practical applications:
+    image classification and classical object detection.
+    \item Error analysis with quantitative evidence.
+\end{enumerate}
+
+The implementation is in:
+\texttt{lab10\_BuiQuangChien\_23001837.ipynb}.
+
+\section{Dataset and Experimental Setup}
+\subsection{Data used}
+\begin{itemize}
+    \item Traffic sign image (and fallback camera image) for manual HOG visualization.
+    \item \texttt{sklearn.datasets.load\_digits()} for quantitative classification and detector experiments.
+\end{itemize}
+
+\subsection{HOG configuration}
+The same HOG configuration is used across manual and library pipelines:
+\begin{itemize}
+    \item Orientation bins: 9.
+    \item Cell size: $8\times8$.
+    \item Block size: $2\times2$ cells.
+    \item Block normalization: L2-Hys.
+\end{itemize}
+
+\subsection{Core equations}
+Given Sobel gradients $G_x, G_y$:
+\begin{align}
+M(x,y) &= \sqrt{G_x(x,y)^2 + G_y(x,y)^2},\\
+\theta(x,y) &= \left(\operatorname{atan2}(G_y, G_x)\cdot \frac{180}{\pi} + 180\right) \bmod 180.
+\end{align}
+For each block vector $v$, L2-Hys normalization is:
+\begin{align}
+\hat{v} &= \frac{v}{\sqrt{\|v\|_2^2 + \varepsilon^2}},\\
+\tilde{v} &= \min(\hat{v}, 0.2),\\
+v_{\text{L2-Hys}} &= \frac{\tilde{v}}{\sqrt{\|\tilde{v}\|_2^2 + \varepsilon^2}}.
+\end{align}
+
+\section{Manual HOG Implementation}
+The manual pipeline includes:
+\begin{enumerate}
+    \item Preprocessing and resize.
+    \item Sobel gradient computation.
+    \item Orientation quantization and magnitude voting.
+    \item Histogram per cell.
+    \item Block normalization and feature concatenation.
+    \item Visualization of dominant local orientations.
+\end{enumerate}
+
+\labfig{outputs/manual_hog_pipeline.png}{Manual HOG pipeline visualization (input, gradients, magnitude, orientation, HOG view).}{fig:manual_hog}
+
+On the $128\times128$ sample image, the manual feature vector length is 8100, matching library output.
+
+\section{Manual vs Library Comparison}
+\subsection{Feature dimensions and speed}
+\begin{table}[H]
+\centering
+\caption{Manual HOG vs \texttt{scikit-image} HOG}
+\begin{tabular}{lcc}
+\toprule
+Metric & Manual & \texttt{scikit-image} \\
+\midrule
+Feature length (sample image) & 8100 & 8100 \\
+Single-image extraction time (ms) & 10.80 & 4.19 \\
+Batch extraction time (ms/image) & 0.790 & 0.190 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The library implementation is faster, while the manual implementation provides full algorithmic transparency.
+
+\section{Application 1: Image Classification}
+\subsection{Pipeline}
+\begin{enumerate}
+    \item Upscale digits to $32\times32$.
+    \item Extract HOG features (manual or library).
+    \item Train classifiers: LinearSVC and Logistic Regression.
+    \item Evaluate using accuracy and confusion matrix.
+\end{enumerate}
+
+\subsection{Model comparison}
+\begin{table}[H]
+\centering
+\caption{Classification results from \texttt{outputs/classification\_model\_comparison.csv}}
+\begin{tabular}{lccc}
+\toprule
+Feature + Classifier & Accuracy & Train time (s) & Feature dim \\
+\midrule
+Manual + LogisticRegression & 0.9889 & 0.5568 & 324 \\
+Skimage + LogisticRegression & 0.9889 & 0.2579 & 324 \\
+Manual + LinearSVC & 0.9822 & 4.0223 & 324 \\
+Skimage + LinearSVC & 0.9756 & 2.9581 & 324 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Best classification configuration: Manual HOG + Logistic Regression with accuracy $0.9889$.
+
+\labfig{outputs/classification_confusion_matrix.png}{Confusion matrix of the best classifier.}{fig:cm}
+
+\section{Application 2: Classical HOG Object Detector}
+\subsection{Detector design}
+The detector follows the classical pipeline:
+\begin{enumerate}
+    \item Image pyramid for multi-scale search.
+    \item Sliding window scan over each scale.
+    \item HOG extraction and linear SVM scoring.
+    \item Non-Maximum Suppression (NMS) with IoU thresholding.
+\end{enumerate}
+
+\subsection{Detector classifier quality}
+On the binary detector training split (digit 0 vs non-0):
+\begin{itemize}
+    \item Accuracy: 0.9900
+    \item Precision: 0.9706
+    \item Recall: 1.0000
+    \item F1-score: 0.9851
+    \item PR-AUC: 0.9991
+\end{itemize}
+
+\subsection{Threshold tuning to reduce false positives}
+Grid search over detector thresholds on 10 synthetic scenes gives best configuration:
+\begin{itemize}
+    \item Score threshold: 0.75
+    \item NMS IoU threshold: 0.15
+    \item Aggregated precision: 0.3548
+    \item Aggregated recall: 0.8800
+    \item Aggregated F1: 0.5057
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{Single-scene comparison: baseline vs tuned thresholds}
+\begin{tabular}{lcccccc}
+\toprule
+Setting & TP & FP & FN & Precision & Recall & F1 \\
+\midrule
+Baseline $(0.35, 0.25)$ & 5 & 15 & 0 & 0.250 & 1.000 & 0.400 \\
+Tuned $(0.75, 0.15)$ & 5 & 7 & 0 & 0.417 & 1.000 & 0.588 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\labfig{outputs/detector_baseline_vs_tuned.png}{Detector output: baseline thresholds vs tuned thresholds.}{fig:detector_compare}
+
+\section{Error Analysis}
+\subsection{Classification errors}
+Per-class metrics remain high for all classes (lowest F1 around 0.9773).
+Top confusion pairs are sparse and each appears once:
+\begin{itemize}
+    \item $3 \rightarrow 1$
+    \item $5 \rightarrow 9$
+    \item $6 \rightarrow 1$
+    \item $6 \rightarrow 8$
+    \item $9 \rightarrow 8$
+\end{itemize}
+This indicates strong class separation from HOG features on the digits task.
+
+\subsection{Detection errors}
+From \texttt{outputs/detection\_summary\_metrics.csv}:
+\begin{table}[H]
+\centering
+\caption{Aggregated detection error summary after tuning}
+\begin{tabular}{lc}
+\toprule
+Metric & Value \\
+\midrule
+Total TP & 44 \\
+Total FP (near-miss) & 6 \\
+Total FP (background) & 74 \\
+Total FN & 6 \\
+Precision & 0.3548 \\
+Recall & 0.8800 \\
+F1 & 0.5057 \\
+Mean IoU on TP & 0.6669 \\
+FN small / medium / large & 3 / 3 / 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\labfig{outputs/detector_error_breakdown.png}{False-positive composition and false-negative size distribution.}{fig:error_breakdown}
+
+Main observations:
+\begin{itemize}
+    \item Background false positives dominate near-miss false positives.
+    \item False negatives mostly appear in small and medium objects; no large-object misses.
+    \item This is consistent with HOG sensitivity to local edge patterns and sliding-window discretization.
+\end{itemize}
+
+\section{Conclusion}
+Manual HOG implementation clarified every algorithmic stage and matched the library feature length.
+The library version is computationally faster.
+For classification, HOG + linear models achieved very high accuracy.
+For classical detection, tuning score and NMS thresholds reduced duplicate detections and improved precision on the inspected scene while keeping recall high.
+
+\section{Reproducibility Artifacts}
+Generated files under \texttt{lab-10/outputs}:
+\begin{itemize}
+    \item PNG: \texttt{manual\_hog\_pipeline.png}, \texttt{classification\_confusion\_matrix.png}, \texttt{detector\_baseline\_vs\_tuned.png}, \texttt{detector\_error\_breakdown.png}
+    \item CSV: \texttt{classification\_model\_comparison.csv}, \texttt{detector\_threshold\_tuning.csv}, \texttt{classification\_per\_class\_metrics.csv}, \texttt{classification\_top\_confusions.csv}, \texttt{detection\_scene\_level\_breakdown.csv}, \texttt{detection\_summary\_metrics.csv}
+\end{itemize}
+
+\end{document}
