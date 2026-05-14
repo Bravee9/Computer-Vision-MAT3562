@@ -7,7 +7,7 @@
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)
 ![NumPy](https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white)
-![scikit--image](https://img.shields.io/badge/scikit--image-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)
+![scikit-image](https://img.shields.io/badge/scikit--image-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)
 ![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=for-the-badge&logo=jupyter&logoColor=white)
 ![LaTeX](https://img.shields.io/badge/LaTeX-008080?style=for-the-badge&logo=latex&logoColor=white)
 
@@ -17,12 +17,12 @@
 
 ## Overview
 
-Hands-on computer vision labs covering **image processing fundamentals through advanced techniques** — from pixel-level operations to frequency-domain analysis, geometric transformations, and morphological processing.
+Hands-on computer vision labs covering image processing fundamentals through advanced techniques. Topics range from pixel-level operations to frequency-domain analysis, geometric transformations, morphological operations, feature detection, image segmentation, object detection, motion analysis, 3D vision, and deep learning applications.
 
 Each lab includes:
-- **Jupyter Notebook** — fully documented implementations (NumPy from-scratch + OpenCV)
-- **LaTeX Report** — theory, experiments, and analysis
-- **Cheatsheet** — quick-reference for key functions and formulas
+- Jupyter Notebook with fully documented implementations (NumPy from scratch and OpenCV)
+- LaTeX Report covering theory, experiments, and analysis
+- Cheatsheet with quick reference for key functions and formulas
 
 ---
 
@@ -30,58 +30,35 @@ Each lab includes:
 
 | Lab | Topic | Key Techniques |
 |:---:|-------|----------------|
-| **01** | [Histogram & Point Processing](lab-01/) | Histogram equalization, gamma correction, log transform, thresholding |
-| **02** | [Arithmetic, Logical Ops & 2D Convolution](lab-02/) | Image arithmetic, Otsu thresholding, custom convolution kernel |
-| **03** | [Spatial & Frequency Domain Processing](lab-03/) | DFT/FFT, ideal LP/HP filters, Gaussian/median denoising, Canny edge detection, **mini-project: image enhancement pipeline** |
-| **04** | [Geometric Transformations](lab-04-05/) | Translation, scaling, rotation, shearing — forward & inverse mapping |
-| **05** | [Morphological Operations](lab-04-05/) | Erosion, dilation, opening, closing — binary & grayscale morphology |
-
----
-
-## Highlights
-
-**From-Scratch Implementations**
-- 2D convolution with zero-padding (NumPy) — verified against `cv2.filter2D`
-- Morphological erosion/dilation from scratch
-- Forward & inverse geometric mapping
-
-**End-to-End Mini-Project (Lab 03)**
-
-Two parallel image enhancement pipelines handling different noise types:
-
-```
-Noisy Image → Denoise → Sharpen → Edge Detect
-```
-
-| Stage | Gaussian Noise Pipeline | Salt & Pepper Pipeline |
-|-------|------------------------|----------------------|
-| Denoise | GaussianBlur (5×5) | MedianBlur (5×5) |
-| Sharpen | Unsharp masking | Unsharp masking |
-| Edge Detect | Canny (30/80) | Canny (30/80) |
+| 01 | Histogram and Point Processing | Histogram equalization, gamma correction, log transform, thresholding |
+| 02 | Arithmetic and Logical Operations | Image arithmetic, Otsu thresholding, custom convolution kernel |
+| 03 | Spatial and Frequency Domain Processing | DFT/FFT, ideal filters, Gaussian blur, median denoising, Canny edge detection |
+| 04 | Geometric Transformations | Translation, scaling, rotation, shearing with forward and inverse mapping |
+| 05 | Morphological Operations | Erosion, dilation, opening, closing on binary and grayscale images |
+| 06 | Feature Detection | Harris corner detection, SIFT, SURF feature extraction and matching |
+| 07 | Image Segmentation | K-means clustering, watershed algorithm, Grabcut method |
+| 08 | Object Detection | Cascade classifiers, template matching, Hough transform |
+| 09 | Motion and Optical Flow | Optical flow estimation, Lucas-Kanade method, background subtraction |
+| 10 | 3D Vision | Stereo vision, depth estimation, epipolar geometry |
+| 11 | Deep Learning Applications | Convolutional neural networks, image classification, transfer learning |
 
 ---
 
 ## Project Structure
 
 ```
-├── lab-01/          Histogram & point processing
-│   ├── lab01_BuiQuangChien_23001837.ipynb
-│   ├── lab01_report.tex
-│   ├── important_functions_cheatsheet.md
-│   └── Data/
-├── lab-02/          Arithmetic, logical ops & convolution
-│   ├── lab02_arithmetics_logical_operations.ipynb
-│   ├── lab02_report.tex
-│   ├── lab02_cheatsheet.tex
-│   └── data/
-├── lab-03/          Spatial & frequency domain + mini-project
-│   ├── lab_03_spatial_frequency.ipynb
-│   ├── lab03_report.tex
-│   ├── lab03_cheatsheet.{md,tex}
-│   └── data/
-└── lab-04-05/       Geometric transforms & morphology
-    ├── lab_04_Geometric_Transformations.ipynb
-    └── lab_05_morphology_operation.ipynb
+lab-01/             Histogram and point processing
+lab-02/             Arithmetic, logical operations, and convolution
+lab-03/             Spatial and frequency domain processing
+lab-04-05/          Geometric transformations and morphological operations
+lab-06/             Feature detection and matching
+lab-07/             Image segmentation techniques
+lab-08/             Object detection methods
+lab-09/             Motion analysis and optical flow
+lab-10/             3D vision and stereo analysis
+lab-11/             Deep learning applications
+cnn/                Convolutional neural network implementations
+outputs/            Generated results and visualizations
 ```
 
 ---
@@ -92,28 +69,32 @@ Noisy Image → Denoise → Sharpen → Edge Detect
 |----------|-------|
 | Language | Python 3 |
 | Core Libraries | NumPy, OpenCV, scikit-image, Matplotlib |
+| Deep Learning | TensorFlow, Keras, PyTorch |
 | Environment | Jupyter Notebook, Google Colab |
-| Documentation | LaTeX (custom templates), Markdown |
+| Documentation | LaTeX, Markdown |
 
 ---
 
 ## Quick Start
 
+Install required packages:
+
 ```bash
-pip install numpy opencv-python scikit-image matplotlib jupyter
+pip install numpy opencv-python scikit-image matplotlib jupyter tensorflow keras pytorch
 ```
 
 Open any notebook:
+
 ```bash
-jupyter notebook lab-01/lab01_BuiQuangChien_23001837.ipynb
+jupyter notebook lab-01/
 ```
 
 ---
 
 ## Author
 
-**Bùi Quang Chiến** — MSSV 23001837  
-Computer Science, Hanoi University of Science — VNU  
+Bui Quang Chien — Student ID 23001837
+Computer Science, Hanoi University of Science — VNU
 
 [![GitHub](https://img.shields.io/badge/GitHub-Bravee9-181717?style=flat-square&logo=github)](https://github.com/Bravee9)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Brave9-0A66C2?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/brave9/)
